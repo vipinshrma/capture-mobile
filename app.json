@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Capture",
+    "slug": "capture",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.capture.inbox"
+    },
+    "android": {
+      "package": "com.capture.inbox"
+    }
+  }
+}
