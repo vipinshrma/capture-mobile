@@ -1,10 +1,11 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Archive, ArrowLeft, Copy, Heart, MoreHorizontal, Share2, Trash2 } from "lucide-react-native";
 import { useAppStore } from "../store/AppStore";
 import { useToast } from "../components/ToastProvider";
 import { colors, shadow } from "../theme";
 import type { RootStackParamList } from "../types";
+import { getImageUri, getPlatform, getSourceUrl } from "../utils/capture";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CaptureDetail">;
 
@@ -20,6 +21,9 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
   }
   const card = dark ? colors.darkCard : colors.card;
   const text = dark ? colors.darkText : colors.text;
+  const imageUri = getImageUri(capture);
+  const platform = getPlatform(capture.source, capture.title);
+  const sourceUrl = getSourceUrl(capture.source, capture.title);
   const remove = () => Alert.alert("Delete this capture?", "This can’t be undone.", [
     { text: "Cancel", style: "cancel" },
     { text: "Delete", style: "destructive", onPress: () => { deleteCapture(capture.id); toast("Deleted"); navigation.navigate("Main"); } },
@@ -36,8 +40,18 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.preview}><View style={styles.browserBar} /><View style={styles.line} /><View style={[styles.line, { width: "58%" }]} /><View style={[styles.line, { width: "75%" }]} /></View>
-        <View style={styles.metaRow}><Text style={styles.badge}>{capture.category || capture.kind}</Text><Text style={styles.meta}>{capture.source} · {capture.createdAt}</Text></View>
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} />
+        ) : (
+          <View style={styles.preview}><View style={styles.browserBar} /><View style={styles.line} /><View style={[styles.line, { width: "58%" }]} /><View style={[styles.line, { width: "75%" }]} /></View>
+        )}
+        <View style={styles.metaRow}>
+          {platform && <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} />}
+          <Text style={styles.badge}>{capture.category || capture.kind}</Text>
+          <Pressable disabled={!sourceUrl} onPress={() => sourceUrl && Linking.openURL(sourceUrl)}>
+            <Text style={[styles.meta, sourceUrl && styles.link]}>{platform?.name || capture.source} · {capture.createdAt}</Text>
+          </Pressable>
+        </View>
         <Text style={[styles.title, { color: text }]}>{capture.title}</Text>
         <View style={[styles.extracted, { backgroundColor: card }]}>
           <Text style={[styles.extractedTitle, { color: text }]}>Extracted text</Text>
@@ -63,11 +77,14 @@ const styles = StyleSheet.create({
   circle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", ...shadow },
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   preview: { height: 200, borderRadius: 20, backgroundColor: "#DDD9F0", justifyContent: "center", padding: 28, gap: 12, ...shadow },
+  imagePreview: { height: 260, borderRadius: 20, backgroundColor: colors.surface, ...shadow },
   browserBar: { height: 22, borderRadius: 7, backgroundColor: "rgba(255,255,255,.75)" },
   line: { width: "86%", height: 7, borderRadius: 4, backgroundColor: "rgba(66,63,145,.32)" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  platformLogo: { width: 22, height: 22, borderRadius: 5 },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, color: colors.accent, backgroundColor: colors.accentSoft, fontSize: 11, fontWeight: "600", textTransform: "capitalize" },
   meta: { color: colors.muted, fontSize: 12.5 },
+  link: { color: colors.accent },
   title: { fontSize: 21, lineHeight: 28, fontWeight: "700" },
   extracted: { padding: 16, borderRadius: 16, gap: 7, ...shadow },
   extractedTitle: { fontSize: 15.5, fontWeight: "600" },

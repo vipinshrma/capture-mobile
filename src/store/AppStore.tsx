@@ -1,14 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { SQLiteDatabase } from "expo-sqlite";
 import { seedCaptures } from "../data/captures";
 import type { Capture, CaptureKind } from "../types";
-
-type PersistedState = {
-  onboarded: boolean;
-  dark: boolean;
-  captures: Capture[];
-  reviewIndex: number;
-};
+import { inferCaptureKind } from "../utils/capture";
+import { initializeDatabase, saveState, type PersistedState } from "./database";
 
 type AppStore = PersistedState & {
   hydrated: boolean;
@@ -29,21 +24,29 @@ const initial: PersistedState = {
 };
 
 const StoreContext = createContext<AppStore | null>(null);
-const STORAGE_KEY = "capture.app-state.v1";
 
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState(initial);
   const [hydrated, setHydrated] = useState(false);
+  const database = useRef<SQLiteDatabase | null>(null);
+  const writeQueue = useRef(Promise.resolve());
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((value) => value && setState({ ...initial, ...JSON.parse(value) }))
-      .catch(() => undefined)
+    initializeDatabase(initial)
+      .then((result) => {
+        database.current = result.database;
+        setState(result.state);
+      })
+      .catch((error) => console.error("Failed to initialize Capture database", error))
       .finally(() => setHydrated(true));
   }, []);
 
   useEffect(() => {
-    if (hydrated) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => undefined);
+    if (!hydrated || !database.current) return;
+    const currentDatabase = database.current;
+    writeQueue.current = writeQueue.current
+      .then(() => saveState(currentDatabase, state))
+      .catch((error) => console.error("Failed to save Capture database", error));
   }, [hydrated, state]);
 
   const value = useMemo<AppStore>(() => ({
@@ -51,16 +54,19 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     hydrated,
     finishOnboarding: () => setState((current) => ({ ...current, onboarded: true })),
     setDark: (dark) => setState((current) => ({ ...current, dark })),
-    addCapture: (title, kind = "note", source) => setState((current) => ({
-      ...current,
-      captures: [{
-        id: `${kind}-${Date.now()}`,
-        kind,
-        title: title.trim() || "Untitled note",
-        source,
-        createdAt: "Just now",
-      }, ...current.captures],
-    })),
+    addCapture: (title, kind = "note", source) => setState((current) => {
+      const captureKind = inferCaptureKind(kind, source);
+      return {
+        ...current,
+        captures: [{
+          id: `${captureKind}-${Date.now()}`,
+          kind: captureKind,
+          title: title.trim() || source || "Untitled note",
+          source,
+          createdAt: "Just now",
+        }, ...current.captures],
+      };
+    }),
     toggleFavourite: (id) => setState((current) => ({
       ...current,
       captures: current.captures.map((item) => item.id === id ? { ...item, favourite: !item.favourite } : item),

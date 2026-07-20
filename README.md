@@ -22,6 +22,6 @@ src/
   types.ts     navigation and domain types
 ```
 
-State is persisted locally with AsyncStorage. Navigation uses typed React Navigation stacks and tabs.
+Captures and settings are persisted locally with SQLite. Navigation uses typed React Navigation stacks and tabs.
 
 Native OCR, a real iOS Share Extension, audio recording and cloud sync are service integrations and are intentionally outside this UI codebase.

@@ -5,6 +5,7 @@
     "scheme": "capture",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
@@ -26,7 +27,8 @@
             }
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

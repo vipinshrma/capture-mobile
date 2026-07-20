@@ -58,7 +58,7 @@ src/
   data/        seed and fixture content
   navigation/  typed native-stack and bottom-tab navigation
   screens/     one file per route
-  store/       persisted application state and actions
+  store/       SQLite database, migration, application state, and actions
   theme.ts     design tokens
   types.ts     domain and navigation types
 ```
@@ -67,7 +67,7 @@ Rules:
 
 - Keep `App.tsx` limited to providers and application initialization.
 - Use typed React Navigation routes.
-- Persist local application state with AsyncStorage.
+- Persist captures and application settings with Expo SQLite.
 - Reuse shared components and design tokens.
 - Do not place multiple full screens in one file.
 - Avoid speculative abstractions and unnecessary dependencies.

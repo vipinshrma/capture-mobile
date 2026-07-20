@@ -30,7 +30,7 @@ export function ShareCaptureScreen({ navigation }: Props) {
 
   const save = () => {
     const isLink = shared?.shareType === "url";
-    addCapture(note || "Captured from Safari", isLink ? "link" : "note", isLink ? "Shared link" : undefined);
+    addCapture(note || sharedValue || "Captured from Safari", isLink ? "link" : "note", isLink ? sharedValue : undefined);
     clearSharedPayloads();
     toast("Saved");
     navigation.replace("Main");
