@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { seedCaptures } from "../data/captures";
-import type { Capture } from "../types";
+import type { Capture, CaptureKind } from "../types";
 
 type PersistedState = {
   onboarded: boolean;
@@ -14,7 +14,7 @@ type AppStore = PersistedState & {
   hydrated: boolean;
   finishOnboarding: () => void;
   setDark: (value: boolean) => void;
-  addCapture: (title: string) => void;
+  addCapture: (title: string, kind?: CaptureKind, source?: string) => void;
   toggleFavourite: (id: string) => void;
   archiveCapture: (id: string) => void;
   deleteCapture: (id: string) => void;
@@ -51,12 +51,13 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     hydrated,
     finishOnboarding: () => setState((current) => ({ ...current, onboarded: true })),
     setDark: (dark) => setState((current) => ({ ...current, dark })),
-    addCapture: (title) => setState((current) => ({
+    addCapture: (title, kind = "note", source) => setState((current) => ({
       ...current,
       captures: [{
-        id: `note-${Date.now()}`,
-        kind: "note",
+        id: `${kind}-${Date.now()}`,
+        kind,
         title: title.trim() || "Untitled note",
+        source,
         createdAt: "Just now",
       }, ...current.captures],
     })),

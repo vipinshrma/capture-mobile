@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useIncomingShare } from "expo-sharing";
 import { Image } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { PrimaryButton, SectionLabel } from "../components/ui";
 import { useToast } from "../components/ToastProvider";
@@ -12,22 +13,43 @@ type Props = NativeStackScreenProps<RootStackParamList, "ShareCapture">;
 
 export function ShareCaptureScreen({ navigation }: Props) {
   const [note, setNote] = useState("");
+  const { clearSharedPayloads, sharedPayloads } = useIncomingShare();
   const { addCapture } = useAppStore();
   const toast = useToast();
+  const shared = sharedPayloads[0];
+  const sharedValue = shared?.value?.trim() || "";
+
+  useEffect(() => {
+    if (sharedValue) setNote(sharedValue);
+  }, [sharedValue]);
+
+  const close = () => {
+    clearSharedPayloads();
+    navigation.goBack();
+  };
+
+  const save = () => {
+    const isLink = shared?.shareType === "url";
+    addCapture(note || "Captured from Safari", isLink ? "link" : "note", isLink ? "Shared link" : undefined);
+    clearSharedPayloads();
+    toast("Saved");
+    navigation.replace("Main");
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.sheet}>
         <View style={styles.handle} />
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()}><Text style={styles.cancel}>Cancel</Text></Pressable>
+          <Pressable onPress={close}><Text style={styles.cancel}>Cancel</Text></Pressable>
           <Text style={styles.title}>Capture</Text><View style={{ width: 44 }} />
         </View>
         <View style={styles.preview}>
           <View style={styles.thumb}><Image color={colors.accent} /></View>
-          <View><SectionLabel>Screenshot</SectionLabel><Text style={styles.previewTitle}>Captured from Safari</Text></View>
+          <View><SectionLabel>{shared ? shared.shareType === "url" ? "Shared link" : "Shared text" : "Screenshot"}</SectionLabel><Text style={styles.previewTitle}>{shared ? "From another app" : "Captured from Safari"}</Text></View>
         </View>
         <TextInput multiline value={note} onChangeText={setNote} placeholder="Add a thought…" placeholderTextColor={colors.faint} style={styles.input} />
-        <PrimaryButton onPress={() => { addCapture(note || "Captured from Safari"); toast("Saved"); navigation.replace("Main"); }}>Save to Inbox</PrimaryButton>
+        <PrimaryButton onPress={save}>Save to Inbox</PrimaryButton>
       </View>
     </View>
   );

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Capture",
     "slug": "capture",
+    "scheme": "capture",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -11,6 +12,21 @@
     },
     "android": {
       "package": "com.capture.inbox"
-    }
+    },
+    "plugins": [
+      [
+        "expo-sharing",
+        {
+          "ios": {
+            "enabled": true,
+            "activationRule": {
+              "supportsText": true,
+              "supportsWebPageWithMaxCount": 1,
+              "supportsWebUrlWithMaxCount": 1
+            }
+          }
+        }
+      ]
+    ]
   }
 }
