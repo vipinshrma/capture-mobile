@@ -13,7 +13,7 @@ export function SearchResultsScreen({ navigation, route }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { captures, dark } = useAppStore();
   const query = route.params.query;
-  const results = useMemo(() => captures.filter((item) => `${item.title} ${item.body || ""} ${item.category || ""}`.toLowerCase().includes(query.toLowerCase())), [captures, query]);
+  const results = useMemo(() => captures.filter((item) => `${item.title} ${item.body || ""} ${item.category || ""} ${item.metadataTitle || ""} ${item.metadataDescription || ""} ${item.metadataSiteName || ""}`.toLowerCase().includes(query.toLowerCase())), [captures, query]);
   return (
     <View style={[styles.screen, dark && styles.darkScreen]}>
       <BackHeader dark={dark} onBack={navigation.goBack} />

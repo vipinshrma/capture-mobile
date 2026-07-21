@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Archive, ArrowLeft, Copy, Heart, MoreHorizontal, Share2, Trash2 } from "lucide-react-native";
 import { useAppStore } from "../store/AppStore";
@@ -15,6 +16,8 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
   const id = route.params?.id || captures[0]?.id;
   const capture = captures.find((item) => item.id === id);
   const back = () => route.params?.returnTo === "Review" ? navigation.navigate("Main", { screen: "Review" }) : navigation.goBack();
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   if (!capture) {
     return <View style={styles.center}><Text>This capture no longer exists.</Text></View>;
@@ -40,22 +43,23 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} />
+        {imageUri && !imageFailed ? (
+          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} />
         ) : (
           <View style={styles.preview}><View style={styles.browserBar} /><View style={styles.line} /><View style={[styles.line, { width: "58%" }]} /><View style={[styles.line, { width: "75%" }]} /></View>
         )}
         <View style={styles.metaRow}>
-          {platform && <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} />}
+          {platform && !logoFailed && <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} />}
+          {platform && logoFailed && <Text style={styles.platformText}>{platform.label}</Text>}
           <Text style={styles.badge}>{capture.category || capture.kind}</Text>
           <Pressable disabled={!sourceUrl} onPress={() => sourceUrl && Linking.openURL(sourceUrl)}>
-            <Text style={[styles.meta, sourceUrl && styles.link]}>{platform?.name || capture.source} · {capture.createdAt}</Text>
+          <Text style={[styles.meta, sourceUrl && styles.link]}>{capture.metadataSiteName || platform?.name || capture.source} · {capture.createdAt}</Text>
           </Pressable>
         </View>
         <Text style={[styles.title, { color: text }]}>{capture.title}</Text>
         <View style={[styles.extracted, { backgroundColor: card }]}>
           <Text style={[styles.extractedTitle, { color: text }]}>Extracted text</Text>
-          <Text style={styles.body}>{capture.body || "No extracted text is available for this capture."}</Text>
+          <Text style={styles.body}>{capture.body || capture.metadataDescription || "No extracted text is available for this capture."}</Text>
           <Pressable onPress={() => toast("Copied")} style={styles.copy}><Copy size={15} color={colors.accent} /><Text style={styles.accentText}>Copy extracted text</Text></Pressable>
         </View>
         <TextInput multiline placeholder="Add a note…" placeholderTextColor={colors.faint} style={[styles.input, { backgroundColor: card, color: text }]} />
@@ -82,6 +86,7 @@ const styles = StyleSheet.create({
   line: { width: "86%", height: 7, borderRadius: 4, backgroundColor: "rgba(66,63,145,.32)" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   platformLogo: { width: 22, height: 22, borderRadius: 5 },
+  platformText: { minWidth: 22, color: colors.accent, fontSize: 12, fontWeight: "800", textAlign: "center" },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, color: colors.accent, backgroundColor: colors.accentSoft, fontSize: 11, fontWeight: "600", textTransform: "capitalize" },
   meta: { color: colors.muted, fontSize: 12.5 },
   link: { color: colors.accent },

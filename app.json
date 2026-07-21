@@ -29,6 +29,29 @@
         }
       ],
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "expo-sharing-extension",
+                  "bundleIdentifier": "com.capture.inbox.expo-sharing-extension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.capture.inbox"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "297851e9-1105-4af0-8f82-6c110bbdf92d"
+      }
+    },
+    "owner": "vipansharma12"
   }
 }

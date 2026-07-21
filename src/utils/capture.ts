@@ -33,14 +33,15 @@ const PLATFORMS = [
   ["dropbox.com", "D", "Dropbox", "#0061FF"],
 ] as const;
 
-export function getImageUri(capture: Pick<Capture, "kind" | "source">) {
-  const source = capture.source?.trim();
+export function getImageUri(capture: Pick<Capture, "kind" | "source" | "metadataImage" | "localFileUri">) {
+  if (capture.localFileUri) return capture.localFileUri;
+  const source = (capture.metadataImage || capture.source)?.trim();
   if (!source || !/^https?:\/\//i.test(source)) return undefined;
-  return capture.kind === "image" || IMAGE_URL_PATTERN.test(source) ? source : undefined;
+  return capture.metadataImage || capture.kind === "image" || IMAGE_URL_PATTERN.test(source) ? source : undefined;
 }
 
 export function inferCaptureKind(kind: CaptureKind, source?: string) {
-  return kind === "link" && source && IMAGE_URL_PATTERN.test(source.trim()) ? "image" : kind;
+  return source && IMAGE_URL_PATTERN.test(source.trim()) ? "image" : kind;
 }
 
 export function getSourceUrl(source?: string, fallback?: string) {

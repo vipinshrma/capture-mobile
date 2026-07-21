@@ -1,4 +1,5 @@
 import { FileText, Image as ImageIcon, Link2, Mic, StickyNote, CheckCircle2 } from "lucide-react-native";
+import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, shadow } from "../theme";
 import type { Capture } from "../types";
@@ -24,13 +25,17 @@ export function CaptureCard({ capture, dark = false, query, onPress }: {
   const index = query ? capture.title.toLowerCase().indexOf(query.toLowerCase()) : -1;
   const imageUri = getImageUri(capture);
   const platform = getPlatform(capture.source, capture.title);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <Pressable onPress={onPress} style={[styles.card, dark && styles.darkCard]}>
       <View style={styles.row}>
         <View style={[styles.icon, platform && styles.platformIconWrap]}>
-          {platform ? (
-            <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} />
+          {platform && !logoFailed ? (
+            <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} />
+          ) : platform ? (
+            <Text style={styles.platformText}>{platform.label}</Text>
           ) : (
             <Icon size={20} color={colors.accent} />
           )}
@@ -49,8 +54,8 @@ export function CaptureCard({ capture, dark = false, query, onPress }: {
               </>
             )}
           </Text>
-          {capture.body && <Text style={styles.body}>{capture.body}</Text>}
-          {imageUri && <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} />}
+          {(capture.body || capture.metadataDescription) && <Text style={styles.body}>{capture.body || capture.metadataDescription}</Text>}
+          {imageUri && !imageFailed && <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} />}
           <Text style={styles.time}>{capture.createdAt}</Text>
         </View>
       </View>
@@ -65,6 +70,7 @@ const styles = StyleSheet.create({
   icon: { width: 38, height: 38, borderRadius: 11, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" },
   platformIconWrap: { backgroundColor: "white" },
   platformLogo: { width: 22, height: 22, borderRadius: 5 },
+  platformText: { color: colors.accent, fontSize: 13, fontWeight: "800" },
   content: { flex: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   meta: { color: colors.muted, fontSize: 12.5, textTransform: "capitalize" },

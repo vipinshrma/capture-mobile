@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { SQLiteDatabase } from "expo-sqlite";
 import { seedCaptures } from "../data/captures";
 import type { Capture, CaptureKind } from "../types";
-import { inferCaptureKind } from "../utils/capture";
+import { getSourceUrl, inferCaptureKind } from "../utils/capture";
+import { fetchLinkMetadata } from "../utils/linkMetadata";
 import { initializeDatabase, saveState, type PersistedState } from "./database";
 
 type AppStore = PersistedState & {
@@ -54,19 +55,33 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     hydrated,
     finishOnboarding: () => setState((current) => ({ ...current, onboarded: true })),
     setDark: (dark) => setState((current) => ({ ...current, dark })),
-    addCapture: (title, kind = "note", source) => setState((current) => {
-      const captureKind = inferCaptureKind(kind, source);
-      return {
-        ...current,
-        captures: [{
-          id: `${captureKind}-${Date.now()}`,
-          kind: captureKind,
-          title: title.trim() || source || "Untitled note",
-          source,
-          createdAt: "Just now",
-        }, ...current.captures],
+    addCapture: (title, kind = "note", source) => {
+      const sourceUrl = getSourceUrl(source, title);
+      const captureKind = inferCaptureKind(kind, sourceUrl);
+      const capture: Capture = {
+        id: `${captureKind}-${Date.now()}`,
+        kind: captureKind,
+        title: title.trim() || source || "Untitled note",
+        source: sourceUrl,
+        createdAt: "Just now",
       };
-    }),
+      setState((current) => ({
+        ...current,
+        captures: [capture, ...current.captures],
+      }));
+      if (sourceUrl) {
+        fetchLinkMetadata(sourceUrl)
+          .then((metadata) => setState((current) => ({
+            ...current,
+            captures: current.captures.map((item) => item.id === capture.id ? {
+              ...item,
+              ...metadata,
+              title: item.title === sourceUrl && metadata.metadataTitle ? metadata.metadataTitle : item.title,
+            } : item),
+          })))
+          .catch(() => undefined);
+      }
+    },
     toggleFavourite: (id) => setState((current) => ({
       ...current,
       captures: current.captures.map((item) => item.id === id ? { ...item, favourite: !item.favourite } : item),

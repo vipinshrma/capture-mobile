@@ -7,6 +7,11 @@ export type Capture = {
   body?: string;
   source?: string;
   category?: string;
+  metadataTitle?: string;
+  metadataDescription?: string;
+  metadataImage?: string;
+  metadataSiteName?: string;
+  localFileUri?: string;
   createdAt: string;
   favourite?: boolean;
   archived?: boolean;

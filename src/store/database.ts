@@ -16,6 +16,11 @@ type CaptureRow = {
   body: string | null;
   source: string | null;
   category: string | null;
+  metadata_title: string | null;
+  metadata_description: string | null;
+  metadata_image: string | null;
+  metadata_site_name: string | null;
+  local_file_uri: string | null;
   created_at: string;
   favourite: number;
   archived: number;
@@ -35,6 +40,11 @@ export async function initializeDatabase(fallback: PersistedState) {
       body TEXT,
       source TEXT,
       category TEXT,
+      metadata_title TEXT,
+      metadata_description TEXT,
+      metadata_image TEXT,
+      metadata_site_name TEXT,
+      local_file_uri TEXT,
       created_at TEXT NOT NULL,
       favourite INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
@@ -46,6 +56,11 @@ export async function initializeDatabase(fallback: PersistedState) {
       value TEXT NOT NULL
     );
   `);
+  await addColumn(database, "captures", "metadata_title TEXT");
+  await addColumn(database, "captures", "metadata_description TEXT");
+  await addColumn(database, "captures", "metadata_image TEXT");
+  await addColumn(database, "captures", "metadata_site_name TEXT");
+  await addColumn(database, "captures", "local_file_uri TEXT");
 
   const initialized = await database.getFirstAsync<{ value: string }>(
     "SELECT value FROM settings WHERE key = 'initialized'",
@@ -79,6 +94,11 @@ export async function initializeDatabase(fallback: PersistedState) {
         body: row.body || undefined,
         source: row.source || undefined,
         category: row.category || undefined,
+        metadataTitle: row.metadata_title || undefined,
+        metadataDescription: row.metadata_description || undefined,
+        metadataImage: row.metadata_image || undefined,
+        metadataSiteName: row.metadata_site_name || undefined,
+        localFileUri: row.local_file_uri || undefined,
         createdAt: row.created_at,
         favourite: Boolean(row.favourite),
         archived: Boolean(row.archived),
@@ -94,14 +114,19 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
     for (const [position, capture] of state.captures.entries()) {
       await database.runAsync(
         `INSERT INTO captures
-          (id, kind, title, body, source, category, created_at, favourite, archived, position)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, kind, title, body, source, category, metadata_title, metadata_description, metadata_image, metadata_site_name, local_file_uri, created_at, favourite, archived, position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         capture.id,
         capture.kind,
         capture.title,
         capture.body ?? null,
         capture.source ?? null,
         capture.category ?? null,
+        capture.metadataTitle ?? null,
+        capture.metadataDescription ?? null,
+        capture.metadataImage ?? null,
+        capture.metadataSiteName ?? null,
+        capture.localFileUri ?? null,
         capture.createdAt,
         capture.favourite ? 1 : 0,
         capture.archived ? 1 : 0,
@@ -121,6 +146,14 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
       );
     }
   });
+}
+
+async function addColumn(database: SQLiteDatabase, table: string, column: string) {
+  try {
+    await database.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column}`);
+  } catch {
+    // Existing installs already have this migration.
+  }
 }
 
 function normalizeLegacyState(value: string | null, fallback: PersistedState): PersistedState {
