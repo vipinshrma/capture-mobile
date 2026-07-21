@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Capture",
-    "slug": "capture",
-    "scheme": "capture",
+    "name": "Tuck",
+    "slug": "tuck",
+    "scheme": "tuck",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

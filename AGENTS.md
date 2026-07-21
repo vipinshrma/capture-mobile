@@ -1,12 +1,12 @@
-# Capture Project Brief
+# Tuck Project Brief
 
 ## What we are building
 
-Capture is a production-quality React Native iOS app built with Expo and TypeScript. It is a universal, low-friction inbox where users save links, screenshots, photos, notes, PDFs, voice notes, and tasks without organizing them first.
+Tuck is a production-quality React Native iOS app built with Expo and TypeScript. It is a universal, low-friction inbox where users save links, screenshots, photos, notes, PDFs, voice notes, and tasks without organizing them first.
 
 Core product flow:
 
-**Capture → Inbox → Search → Review**
+**Tuck → Inbox → Search → Review**
 
 ## Product requirements
 

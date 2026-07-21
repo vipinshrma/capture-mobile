@@ -42,7 +42,7 @@ export function ShareCaptureScreen({ navigation }: Props) {
         <View style={styles.handle} />
         <View style={styles.header}>
           <Pressable onPress={close}><Text style={styles.cancel}>Cancel</Text></Pressable>
-          <Text style={styles.title}>Capture</Text><View style={{ width: 44 }} />
+          <Text style={styles.title}>Tuck</Text><View style={{ width: 44 }} />
         </View>
         <View style={styles.preview}>
           <View style={styles.thumb}><Image color={colors.accent} /></View>

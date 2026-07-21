@@ -10,9 +10,9 @@ import type { RootStackParamList } from "../types";
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 
 const copy = [
-  ["Save anything without organizing it first", "Capture links, screenshots, notes, files and ideas from any app."],
-  ["Use the Share button anywhere", "Send content to Capture from Safari, Photos, Files, WhatsApp and other apps."],
-  ["Find it when you need it", "Capture extracts text, suggests categories and brings useful items back when they matter."],
+  ["Save anything without organizing it first", "Tuck links, screenshots, notes, files and ideas from any app."],
+  ["Use the Share button anywhere", "Send content to Tuck from Safari, Photos, Files, WhatsApp and other apps."],
+  ["Find it when you need it", "Tuck keeps text, categories and useful items ready when they matter."],
 ];
 
 export function OnboardingScreen({ navigation }: Props) {

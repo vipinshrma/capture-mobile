@@ -1,6 +1,6 @@
-# Capture
+# Tuck
 
-Expo React Native implementation of the Capture iOS inbox prototype.
+Expo React Native implementation of the Tuck iOS inbox prototype.
 
 ## Run
 

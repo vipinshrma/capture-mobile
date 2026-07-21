@@ -14,7 +14,7 @@ export function SettingsScreen({ navigation }: Props) {
     <View style={[styles.screen, dark && styles.darkScreen]}>
       <BackHeader title="Settings" dark={dark} onBack={navigation.goBack} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Group dark={dark} title="Capture" rows={["Default save behaviour", "Include source URL", "Haptic confirmation"]} />
+        <Group dark={dark} title="Tuck" rows={["Default save behaviour", "Include source URL", "Haptic confirmation"]} />
         <View><SectionLabel>Appearance</SectionLabel><View style={[styles.group, dark && styles.darkGroup]}><View style={styles.row}><Text style={[styles.rowText, dark && styles.darkText]}>Dark mode</Text><View style={styles.switchSlot}><Switch accessibilityLabel="Dark mode" value={dark} onValueChange={setDark} trackColor={{ false: dark ? "#3A3A3C" : "#D1D1D6", true: colors.accent }} ios_backgroundColor={dark ? "#3A3A3C" : "#D1D1D6"} /></View></View></View></View>
         <View><SectionLabel>Privacy</SectionLabel><View style={[styles.group, dark && styles.darkGroup]}>
           <Row dark={dark} label="Your captures belong to you" onPress={() => navigation.navigate("Privacy")} />
