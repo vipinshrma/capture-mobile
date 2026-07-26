@@ -51,7 +51,8 @@ export function getSourceUrl(source?: string, fallback?: string) {
 
 export function getPlatform(source?: string, fallback?: string) {
   try {
-    const host = new URL(getSourceUrl(source, fallback) || "").hostname.replace(/^www\./, "");
+    const value = getSourceUrl(source, fallback) || source?.trim() || "";
+    const host = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`).hostname.replace(/^www\./, "");
     const platform = PLATFORMS.find(([domain]) => host === domain || host.endsWith(`.${domain}`));
     return platform && {
       label: platform[1],

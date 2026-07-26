@@ -18,6 +18,15 @@
       [
         "expo-sharing",
         {
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": [
+              "text/plain",
+              "image/*",
+              "application/pdf",
+              "audio/*"
+            ]
+          },
           "ios": {
             "enabled": true,
             "activationRule": {
