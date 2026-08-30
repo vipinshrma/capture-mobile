@@ -1,9 +1,9 @@
 type PreviewKind = "inbox" | "capture" | "search" | "detail" | "review";
 
 const content = {
-  inbox: { title: "Inbox", eyebrow: "Good morning", cards: ["Building reliable offline-first applications", "Save immediately. Organize later.", "Mobile Capture Product Research"] },
+  inbox: { title: "Inbox", eyebrow: "All captures", cards: ["Building reliable offline-first applications", "Save immediately. Organize later.", "Mobile Capture Product Research"] },
   capture: { title: "Quick Capture", eyebrow: "Save something", cards: ["Write a note", "Record voice", "Choose photo", "Paste link"] },
-  search: { title: "Search", eyebrow: "3 results", cards: ["Links · This week", "Local-first is the new offline-first", "Building reliable offline-first applications"] },
+  search: { title: "Search Results", eyebrow: "3 results", cards: ["Links · This week", "Local-first is the new offline-first", "Building reliable offline-first applications"] },
   detail: { title: "Voice note", eyebrow: "Capture detail", cards: ["▶  00:32", "Add a note", "Share     Favourite"] },
   review: { title: "Review", eyebrow: "1 of 4", cards: ["Review PR #482 before standup", "Keep", "Archive     Remind"] },
 } satisfies Record<PreviewKind, { title: string; eyebrow: string; cards: string[] }>;

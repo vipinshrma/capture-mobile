@@ -99,9 +99,9 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
         </View>
         <Text style={[styles.title, { color: text }]}>{capture.title}</Text>
         <View style={[styles.extracted, { backgroundColor: card }]}>
-          <Text style={[styles.extractedTitle, { color: text }]}>Extracted text</Text>
-          <Text style={styles.body}>{extractedText || "No extracted text is available for this capture."}</Text>
-          {extractedText && <Pressable accessibilityLabel="Copy extracted text" onPress={copyText} style={styles.copy}><Copy size={15} color={colors.accent} /><Text style={styles.accentText}>Copy extracted text</Text></Pressable>}
+          <Text style={[styles.extractedTitle, { color: text }]}>Saved text</Text>
+          <Text style={styles.body}>{extractedText || "No saved text is available for this capture."}</Text>
+          {extractedText && <Pressable accessibilityLabel="Copy saved text" onPress={copyText} style={styles.copy}><Copy size={15} color={colors.accent} /><Text style={styles.accentText}>Copy saved text</Text></Pressable>}
         </View>
         <TextInput multiline value={note} onChangeText={setNote} placeholder="Add a note…" placeholderTextColor={colors.faint} style={[styles.input, { backgroundColor: card, color: text }]} />
         <Pressable accessibilityRole="button" disabled={note.trim() === (capture.userNote || "")} onPress={saveNote} style={[styles.saveNote, note.trim() === (capture.userNote || "") && styles.disabled]}><Text style={styles.saveNoteText}>Save Note</Text></Pressable>

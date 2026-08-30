@@ -2,7 +2,7 @@
 
 ## What we are building
 
-Tuck is a production-quality React Native iOS app built with Expo and TypeScript. It is a universal, low-friction inbox where users save links, screenshots, photos, notes, PDFs, voice notes, and tasks without organizing them first.
+Tuck is a production-quality React Native app built with Expo and TypeScript. It is a universal, low-friction inbox where users save links, screenshots, photos, notes, PDFs, documents, and voice notes without organizing them first.
 
 Core product flow:
 
@@ -20,16 +20,18 @@ Core product flow:
 
 Implemented:
 
-- Expo 55 app shell, typed stack/tab navigation, all required UI surfaces, dark mode, and animated toast feedback.
+- Expo 55 app shell, typed stack/tab navigation, all required UI surfaces, dark mode across primary screens, and animated toast feedback.
 - SQLite persistence for onboarding, appearance, captures, timestamps, user notes, local attachments, favourites, archive state, reminders, and review position, including additive migrations and legacy AsyncStorage migration.
-- Inbox and Search Results type/date filters, in-memory search across capture, metadata, and user-note fields, quick capture for notes, links, photos, and recorded audio, capture detail, review, archive, favourites, and destructive confirmations.
+- Inbox filters for links, images, notes, and documents; Search Results type/date filters; in-memory search across capture, metadata, and user-note fields; quick capture for notes, links, photos, and recorded audio; capture detail, review, archive, favourites, and destructive confirmations.
 - Incoming single-item sharing on iOS and Android through `expo-sharing`; text, URLs, images, PDFs/files, and audio are saved with the correct kind, and attachments are copied to durable local storage.
 - Capture Detail note editing, clipboard copy, native sharing, favourite feedback, local Review notifications with tap-through navigation, and confirmed Delete All with attachment cleanup.
 - Security hardening for durable and staging-file deletion, 100 MB attachment and 1 MB shared-text limits, generic lock-screen reminder copy, Android backup/overlay restrictions, production signing safeguards, and an audited dependency graph with no known vulnerabilities.
+- Static Next.js landing page with an email/platform waitlist, light and dark themes, truthful feature/privacy copy, and explicit Formspree and Vercel Web Analytics disclosure.
 
 Known remaining work:
 
-- Add native OCR, direct document import, optional cloud sync, and backend services only when requested.
+- Add task creation, native OCR, direct document import, optional cloud sync, and backend services only when requested.
+- Complete dark-mode styling for Quick Capture and incoming Share Capture sheets.
 - Complete physical-device photo-picker and microphone-permission checks on both iOS and Android.
 - Complete physical-device share-sheet and notification checks on both iOS and Android before release.
 - Configure and verify production Android signing credentials before distributing a release build.
@@ -59,7 +61,7 @@ Every route must have its own file under `src/screens/`.
 
 - Open captures from Inbox, Search, Review, Archive, and Favourites.
 - Create and persist quick notes, links, selected photos, and voice recordings.
-- Search titles, bodies, categories, and extracted text.
+- Search titles, saved text, user notes, URLs, categories, and available metadata.
 - Filter Inbox content by type.
 - Favourite, archive, and delete captures.
 - Review actions: Keep, Archive, Remind, and Open.

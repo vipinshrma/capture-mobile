@@ -1,6 +1,6 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
-import { ChevronRight, Clock3, Search, X } from "lucide-react-native";
+import { ChevronRight, Search, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { ScreenTitle, SectionLabel } from "../components/ui";
@@ -22,15 +22,15 @@ export function SearchScreen() {
         {!!query && <Pressable onPress={() => setQuery("")}><X size={17} color={colors.muted} /></Pressable>}
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionLabel>Recent searches</SectionLabel>
-        {["offline-first", "product research", "daily review"].map((item) => (
-          <Pressable key={item} onPress={() => search(item)} style={styles.row}><Clock3 size={17} color={colors.muted} /><Text style={[styles.rowText, dark && styles.darkText]}>{item}</Text><ChevronRight size={16} color={colors.faint} /></Pressable>
+        <SectionLabel>Try a search</SectionLabel>
+        {["offline-first", "product research", "review"].map((item) => (
+          <Pressable key={item} onPress={() => search(item)} style={styles.row}><Search size={17} color={colors.muted} /><Text style={[styles.rowText, dark && styles.darkText]}>{item}</Text><ChevronRight size={16} color={colors.faint} /></Pressable>
         ))}
         <View style={styles.suggested}>
           <SectionLabel>Suggested categories</SectionLabel>
-          <View style={styles.wrap}>{["Development", "Ideas", "Reading", "Work", "Documents"].map((item) => <Text key={item} style={[styles.chip, dark && styles.darkSurface]}>{item}</Text>)}</View>
+          <View style={styles.wrap}>{["Development", "Screenshot", "Idea"].map((item) => <Pressable key={item} onPress={() => search(item)} style={[styles.chip, dark && styles.darkSurface]}><Text style={[styles.chipText, dark && { color: colors.faint }]}>{item}</Text></Pressable>)}</View>
         </View>
-        <Text style={styles.helper}>Search titles, notes, OCR text, transcriptions, URLs and categories.</Text>
+        <Text style={styles.helper}>Search titles, notes, URLs, categories, and saved details.</Text>
       </ScrollView>
     </View>
   );
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, color: colors.text, fontSize: 16 },
   suggested: { marginTop: 22, gap: 9 },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: colors.surface, color: colors.secondary, fontSize: 13 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: colors.surface },
+  chipText: { color: colors.secondary, fontSize: 13 },
   helper: { marginTop: 26, color: colors.faint, fontSize: 13, lineHeight: 19 },
 });

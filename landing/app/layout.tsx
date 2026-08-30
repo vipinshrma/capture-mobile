@@ -17,20 +17,20 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: "Tuck: Save it now. Find it when it matters.",
   description:
-    "Tuck is one private inbox for links, screenshots, notes, documents, and voice notes, without folders, tags, or setup.",
+    "Tuck is a private local inbox for links, screenshots, notes, PDFs, and voice notes, with no folders, tags, or account required.",
   alternates: { canonical: "/" },
   icons: { icon: "/assets/favicon.svg" },
   openGraph: {
     type: "website",
     url: "/",
     title: "Tuck: Save it now. Find it when it matters.",
-    description: "A private inbox for everything worth remembering.",
-    images: [{ url: "/assets/social-preview.svg", width: 1200, height: 630, alt: "Tuck, a private inbox for everything" }],
+    description: "A private local inbox for links, files, notes, and voice.",
+    images: [{ url: "/assets/social-preview.svg", width: 1200, height: 630, alt: "Tuck, a private local inbox for links, files, notes, and voice" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Tuck: Save it now. Find it when it matters.",
-    description: "A private inbox for everything worth remembering.",
+    description: "A private local inbox for links, files, notes, and voice.",
     images: ["/assets/social-preview.svg"],
   },
 };
@@ -51,7 +51,7 @@ const softwareApplication = {
   url: siteUrl.href,
   applicationCategory: "ProductivityApplication",
   operatingSystem: "iOS, Android",
-  description: "A private, local-first inbox for links, screenshots, notes, documents, and voice notes.",
+  description: "A private local inbox for links, screenshots, notes, PDFs, supported files, and voice notes.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

@@ -7,15 +7,15 @@ const captureTypes = [
   ["Links", "Share a useful page from your browser or paste its address."],
   ["Screenshots & photos", "Keep visual references beside everything else you save."],
   ["Notes", "Write down a thought before the moment passes."],
-  ["PDFs & documents", "Store the files you need to revisit, available offline."],
+  ["PDFs & supported files", "Keep shared files in local app storage for offline access."],
   ["Voice notes", "Record an idea and play it back from its capture."],
-  ["Tasks & reminders", "Save a task, then schedule a local reminder to return to it."],
+  ["Review reminders", "Schedule a local reminder for tomorrow or next week from Review."],
 ];
 
 const workflow = [
   ["Tuck", "Share from another app or use Quick Capture.", "capture"],
-  ["Inbox", "Everything arrives without titles, folders, or tags.", "inbox"],
-  ["Search", "Search text and notes, then filter by type or date.", "search"],
+  ["Inbox", "Everything lands in one inbox. No folders, tags, or manual filing.", "inbox"],
+  ["Search", "Search titles, notes, URLs, categories, and saved details. Filter by type or date.", "search"],
   ["Review", "Keep, archive, open, or schedule a reminder.", "review"],
 ] as const;
 
@@ -28,11 +28,11 @@ const gallery = [
 ] as const;
 
 const faqs = [
-  ["What can I save in Tuck?", "Links, screenshots, photos, notes, PDFs, documents, voice notes, and simple tasks."],
+  ["What can I save in Tuck?", "Links, screenshots, photos, notes, PDFs, supported files, and voice notes."],
   ["Is Tuck available for iOS and Android?", "Tuck is being prepared for private beta testing on both iOS and Android."],
   ["Do I need an account?", "No. Tuck’s core local experience does not require an account."],
   ["Does Tuck work offline?", "Yes. Saved captures and local attachments remain available without a connection."],
-  ["Where is my content stored?", "In Tuck’s protected local app storage on your device. Android cloud backup is disabled."],
+  ["Where is my content stored?", "Tuck stores captures and copied attachments in the app’s local storage. Android cloud backup is disabled."],
   ["When will the beta be available?", "We’re testing the core experience now. Waitlist members will be invited in small groups."],
 ];
 
@@ -62,7 +62,7 @@ export default function Home() {
             <div className="hero-copy">
               <p className="eyebrow">Private beta · iOS &amp; Android</p>
               <h1>Save it now.<br />Find it when it matters.</h1>
-              <p className="lede">Tuck is one private inbox for links, screenshots, notes, documents, and voice notes, without folders, tags, or setup.</p>
+              <p className="lede">Tuck is one private inbox for links, screenshots, notes, PDFs, and voice notes. No folders, tags, or account required.</p>
               <WaitlistForm />
               <a className="text-link" href="#how-it-works">See how it works</a>
             </div>
@@ -82,13 +82,13 @@ export default function Home() {
               <article><span>02</span><p>Screenshots and files become difficult to find.</p></article>
               <article><span>03</span><p>Organizing content at capture time creates friction.</p></article>
             </div>
-            <p className="closing-copy">Tuck gives everything one temporary home. <strong>Organize nothing. Just capture it.</strong></p>
+            <p className="closing-copy">Tuck gives saved items one place to land. <strong>Capture first. Decide later.</strong></p>
           </div>
         </section>
 
         <section className="capture section" aria-labelledby="capture-title">
           <div className="shell">
-            <div className="section-heading"><p className="kicker">Capture anything</p><h2 id="capture-title">One inbox for everything worth remembering.</h2></div>
+            <div className="section-heading"><p className="kicker">What you can save</p><h2 id="capture-title">One inbox for what you want to revisit.</h2></div>
             <div className="capture-grid">
               {captureTypes.map(([title, copy]) => <article className="capture-card" key={title}><h3>{title}</h3><p>{copy}</p></article>)}
             </div>
@@ -106,23 +106,23 @@ export default function Home() {
 
         <section className="gallery section" aria-labelledby="gallery-title">
           <div className="shell">
-            <div className="section-heading"><h2 id="gallery-title">Quiet by design. Useful by default.</h2><p>Product flows shown with non-personal sample content.</p></div>
+            <div className="section-heading"><h2 id="gallery-title">Quiet by design. Useful by default.</h2><p>Illustrative previews using non-personal sample content.</p></div>
             <div className="gallery-grid" aria-label="Product previews">
               {gallery.map(([kind, title, copy]) => <figure key={title}><div className="device"><AppPreview kind={kind} /></div><figcaption><strong>{title}</strong><span>{copy}</span></figcaption></figure>)}
             </div>
-            <p className="preview-note">Preview screens use the current app UI and sanitized content. Replace them with final same-size device captures before launch.</p>
+            <p className="preview-note">These are simplified interface previews, not device screenshots. Replace them with final same-size device captures before launch.</p>
           </div>
         </section>
 
         <section className="privacy section" id="privacy" aria-labelledby="privacy-title">
           <div className="shell privacy-grid">
-            <div><p className="kicker">No account. No cloud library.</p><h2 id="privacy-title">Private by default.</h2><p className="privacy-lede">Tuck is designed as a local app first, so your captures stay on the device you used to save them.</p></div>
+            <div><p className="kicker">Local app. No Tuck account.</p><h2 id="privacy-title">Private by default.</h2><p className="privacy-lede">Tuck stores captures locally and does not sync them to a Tuck account or cloud library.</p></div>
             <div className="promise-list">
-              <article><div><h3>Stored locally</h3><p>Captures remain in Tuck’s protected local app storage.</p></div></article>
+              <article><div><h3>Stored locally</h3><p>Captures and copied attachments are stored in the app’s local storage.</p></div></article>
               <article><div><h3>No account required</h3><p>Open Tuck and start saving without creating a profile.</p></div></article>
               <article><div><h3>Delete whenever you want</h3><p>Remove all captures and their attachments from Settings.</p></div></article>
             </div>
-            <div className="privacy-facts"><p>Android cloud backup is disabled.</p><p>Saved links are not automatically fetched for metadata.</p><p>Waitlist email is sent only to the hosted form provider.</p></div>
+            <div className="privacy-facts"><p>Android cloud backup is disabled.</p><p>Tuck does not fetch page content or link previews. Recognized services may load a favicon from Google when capture details open.</p><p>This site sends waitlist submissions to Formspree and uses Vercel Web Analytics.</p></div>
           </div>
         </section>
 
@@ -143,8 +143,8 @@ export default function Home() {
 
       <footer className="site-footer">
         <div className="shell footer-grid">
-          <div><a href="#top"><Brand /></a><p>A private inbox for everything.</p></div>
-          <div className="footer-links"><a href="mailto:hello@example.com">Contact</a><a href="#privacy">Privacy</a><a href="#faq">FAQ</a></div>
+          <div><a href="#top"><Brand /></a><p>A private local inbox for links, files, notes, and voice.</p></div>
+          <div className="footer-links"><a href="#privacy">Privacy</a><a href="#faq">FAQ</a></div>
           <p>© {new Date().getFullYear()} Tuck</p>
         </div>
       </footer>

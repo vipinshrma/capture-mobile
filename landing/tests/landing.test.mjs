@@ -18,8 +18,10 @@ test("the static landing export includes the complete waitlist experience", () =
   assert.match(html, /tuck-theme/);
 });
 
-test("the public page avoids unsupported product promises", () => {
-  for (const claim of ["end-to-end encryption", "automatic tagging", "cloud sync", "OCR", "millions of users"]) {
+test("the public page avoids unsupported or misleading product promises", () => {
+  for (const claim of ["end-to-end encryption", "automatic tagging", "cloud sync", "OCR", "millions of users", "simple tasks", "without titles", "current app UI", "protected local app storage", "hello@example.com"]) {
     assert.doesNotMatch(html, new RegExp(claim, "i"));
   }
+  assert.match(html, /simplified interface previews, not device screenshots/i);
+  assert.match(html, /uses Vercel Web Analytics/i);
 });

@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { LockKeyhole, ShieldCheck, Trash2 } from "lucide-react-native";
+import { Globe2, LockKeyhole, ShieldCheck, Trash2 } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackHeader } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
@@ -9,8 +9,9 @@ import type { RootStackParamList } from "../types";
 type Props = NativeStackScreenProps<RootStackParamList, "Privacy">;
 
 const rows = [
-  [LockKeyhole, "Captures stay in Tuck’s protected app storage and are excluded from Android cloud backup."],
-  [ShieldCheck, "An account is never required."],
+  [LockKeyhole, "Captures are stored in Tuck’s local app storage and are excluded from Android cloud backup."],
+  [ShieldCheck, "No account is required to use Tuck."],
+  [Globe2, "Tuck does not fetch page content. Recognized services may load a favicon from Google when capture details open."],
   [Trash2, "You can delete everything at any time."],
 ] as const;
 
