@@ -20,7 +20,7 @@ export function EmptyInboxScreen({ navigation }: Props) {
           <Text style={styles.copy}>Save links, screenshots, notes and files from any app using the Share button.</Text>
         </View>
         <View style={styles.actions}>
-          <PrimaryButton onPress={() => navigation.navigate("ShareCapture")}>Show me how</PrimaryButton>
+          <PrimaryButton onPress={() => navigation.replace("Main", { screen: "Inbox", params: { openQuickCapture: true } })}>Capture something</PrimaryButton>
           <Pressable onPress={() => navigation.replace("Main")} style={styles.textButton}><Text style={styles.textButtonLabel}>Explore the inbox</Text></Pressable>
         </View>
       </View>

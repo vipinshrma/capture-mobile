@@ -20,7 +20,7 @@ export function OnboardingScreen({ navigation }: Props) {
   const { finishOnboarding } = useAppStore();
   const finish = () => {
     finishOnboarding();
-    navigation.replace("EmptyInbox");
+    navigation.replace("Main", { screen: "Inbox", params: { openQuickCapture: true } });
   };
   return (
     <View style={styles.screen}>

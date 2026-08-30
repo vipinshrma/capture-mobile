@@ -35,7 +35,7 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Inbox: undefined;
+  Inbox: { openQuickCapture?: boolean } | undefined;
   Search: undefined;
   Review: undefined;
 };

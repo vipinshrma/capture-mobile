@@ -1,5 +1,5 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { Inbox as InboxIcon, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -9,16 +9,17 @@ import { useToast } from "../components/ToastProvider";
 import { ScreenTitle, SearchPill, SectionLabel } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
 import { colors } from "../theme";
-import type { RootStackParamList } from "../types";
+import type { RootStackParamList, TabParamList } from "../types";
 
 const filters = ["All", "Links", "Images", "Notes", "Documents"] as const;
 
 export function InboxScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<TabParamList, "Inbox">>();
   const { captures, dark, addCapture } = useAppStore();
   const toast = useToast();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
-  const [quickOpen, setQuickOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(Boolean(route.params?.openQuickCapture));
   const visible = useMemo(() => captures.filter((item) => {
     if (item.archived) return false;
     if (filter === "All") return true;
