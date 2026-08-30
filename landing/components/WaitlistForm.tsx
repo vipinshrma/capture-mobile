@@ -13,7 +13,7 @@ export function WaitlistForm() {
     if (!form.checkValidity()) return;
 
     event.preventDefault();
-    if (FORMSPREE_FORM_ID === "FORM_ID") {
+    if (!FORMSPREE_FORM_ID) {
       setState("unconfigured");
       return;
     }
