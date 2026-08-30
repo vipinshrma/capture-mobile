@@ -49,6 +49,12 @@ export function getSourceUrl(source?: string, fallback?: string) {
   return value && /^https?:\/\//i.test(value) ? value : undefined;
 }
 
+export function normalizeWebUrl(value: string) {
+  const url = new URL(/^https?:\/\//i.test(value.trim()) ? value.trim() : `https://${value.trim()}`);
+  if (!url.hostname.includes(".")) throw new Error("Invalid URL");
+  return url.toString();
+}
+
 export function getPlatform(source?: string, fallback?: string) {
   try {
     const value = getSourceUrl(source, fallback) || source?.trim() || "";

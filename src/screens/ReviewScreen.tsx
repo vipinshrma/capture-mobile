@@ -1,19 +1,59 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 import { Archive, Check, CheckCircle2, ChevronRight, Clock3, Sparkles } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { PrimaryButton, ScreenTitle } from "../components/ui";
 import { useToast } from "../components/ToastProvider";
 import { useAppStore } from "../store/AppStore";
 import { colors, shadow } from "../theme";
 import type { RootStackParamList } from "../types";
+import { getReminderDate, type ReminderChoice } from "../utils/reminders";
 
 export function ReviewScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { captures, dark, reviewIndex, advanceReview, archiveCapture } = useAppStore();
+  const { captures, dark, reviewIndex, advanceReview, archiveCapture, setCaptureReminder } = useAppStore();
   const toast = useToast();
   const queue = captures.filter((item) => !item.archived);
   const item = queue[reviewIndex];
+
+  const scheduleReminder = async (choice: ReminderChoice) => {
+    if (!item) return;
+    try {
+      let permissions = await Notifications.getPermissionsAsync();
+      if (permissions.status !== "granted") permissions = await Notifications.requestPermissionsAsync();
+      if (permissions.status !== "granted") {
+        Alert.alert("Notifications are off", "Allow notifications in Settings to create reminders.");
+        return;
+      }
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("reminders", {
+          name: "Capture reminders",
+          importance: Notifications.AndroidImportance.DEFAULT,
+        });
+      }
+      const reminderNotificationId = await Notifications.scheduleNotificationAsync({
+        content: { title: "Tuck reminder", body: "You have a capture to review.", data: { captureId: item.id } },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: getReminderDate(choice),
+          ...(Platform.OS === "android" ? { channelId: "reminders" } : {}),
+        },
+      });
+      setCaptureReminder(item.id, reminderNotificationId);
+      advanceReview();
+      toast(choice === "tomorrow" ? "Reminder set for tomorrow" : "Reminder set for next week");
+    } catch (error) {
+      console.error("Failed to schedule capture reminder", error);
+      Alert.alert("Couldn’t set reminder", "Please try again.");
+    }
+  };
+
+  const remind = () => Alert.alert("Remind me", undefined, [
+    { text: "Tomorrow", onPress: () => scheduleReminder("tomorrow") },
+    { text: "Next Week", onPress: () => scheduleReminder("next-week") },
+    { text: "Cancel", style: "cancel" },
+  ]);
 
   if (!item) {
     return (
@@ -46,7 +86,7 @@ export function ReviewScreen() {
         <View style={styles.actions}>
           <Action icon={CheckCircle2} label="Keep" dark={dark} onPress={advanceReview} />
           <Action icon={Archive} label="Archive" dark={dark} onPress={() => { archiveCapture(item.id); toast("Archived"); }} />
-          <Action icon={Clock3} label="Remind" dark={dark} onPress={() => { advanceReview(); toast("Remind later"); }} />
+          <Action icon={Clock3} label="Remind" dark={dark} onPress={remind} />
           <Action icon={ChevronRight} label="Open" active onPress={() => navigation.navigate("CaptureDetail", { id: item.id, returnTo: "Review" })} />
         </View>
       </View>

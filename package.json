@@ -7,6 +7,7 @@
     "start": "expo start",
     "ios": "expo run:ios",
     "android": "expo run:android",
+    "postinstall": "node scripts/patch-expo-audio-permission.mjs",
     "web": "expo start --web",
     "build:ios:dev": "eas build --platform ios --profile development",
     "build:ios:preview": "eas build --platform ios --profile preview",
@@ -14,22 +15,29 @@
     "build:android:dev": "eas build --platform android --profile development",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:android:prod": "eas build --platform android --profile production",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/*.test.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.10.1",
     "@react-navigation/native": "^7.1.28",
     "@react-navigation/native-stack": "^7.10.1",
-    "expo": "^55.0.0",
-    "expo-dev-client": "~55.0.37",
-    "expo-linking": "~55.0.16",
-    "expo-sharing": "~55.0.22",
-    "expo-sqlite": "~55.0.18",
+    "expo": "^55.0.30",
+    "expo-asset": "~55.0.20",
+    "expo-audio": "~55.0.18",
+    "expo-clipboard": "~55.0.15",
+    "expo-dev-client": "~55.0.39",
+    "expo-file-system": "~55.0.24",
+    "expo-image-picker": "~55.0.24",
+    "expo-linking": "~55.0.17",
+    "expo-notifications": "~55.0.25",
+    "expo-sharing": "~55.0.24",
+    "expo-sqlite": "~55.0.20",
     "expo-status-bar": "~55.0.6",
     "lucide-react-native": "^0.563.0",
     "react": "19.2.0",
-    "react-native": "0.83.6",
+    "react-native": "^0.83.10",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.23.0",
     "react-native-svg": "15.15.3"
@@ -37,5 +45,8 @@
   "devDependencies": {
     "@types/react": "~19.2.10",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }

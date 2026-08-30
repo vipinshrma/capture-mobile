@@ -57,7 +57,7 @@ export function InboxScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
       <Pressable accessibilityLabel="Quick capture" onPress={() => setQuickOpen(true)} style={styles.fab}><Plus size={26} color="white" /></Pressable>
-      <QuickCaptureSheet visible={quickOpen} onClose={() => setQuickOpen(false)} onSave={(note) => { addCapture(note); setQuickOpen(false); toast("Added to Inbox"); }} />
+      <QuickCaptureSheet visible={quickOpen} onClose={() => setQuickOpen(false)} onSave={(input) => { addCapture(input); setQuickOpen(false); toast("Added to Inbox"); }} />
     </View>
   );
 }

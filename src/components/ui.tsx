@@ -3,16 +3,18 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ArrowLeft, Search } from "lucide-react-native";
 import { colors, shadow } from "../theme";
 
-export function PrimaryButton({ children, onPress, secondary = false }: {
+export function PrimaryButton({ children, onPress, secondary = false, disabled = false }: {
   children: ReactNode;
   onPress: () => void;
   secondary?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, secondary && styles.secondaryButton, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.button, secondary && styles.secondaryButton, disabled && styles.disabled, pressed && styles.pressed]}
     >
       <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{children}</Text>
     </Pressable>
@@ -73,6 +75,7 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: colors.surface, shadowOpacity: 0, elevation: 0 },
   buttonText: { color: "white", fontSize: 16, fontWeight: "600" },
   secondaryText: { color: colors.secondary },
+  disabled: { opacity: 0.45 },
   pressed: { opacity: 0.76 },
   titleBar: { paddingHorizontal: 20, paddingVertical: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: colors.text, fontSize: 32, lineHeight: 39, fontWeight: "700" },

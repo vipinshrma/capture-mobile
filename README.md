@@ -22,6 +22,8 @@ src/
   types.ts     navigation and domain types
 ```
 
-Captures and settings are persisted locally with SQLite. Navigation uses typed React Navigation stacks and tabs.
+Captures, local attachments, reminders, and settings are persisted locally with SQLite. Navigation uses typed React Navigation stacks and tabs. Quick Capture supports notes, links, selected photos, and voice recordings; incoming text, URLs, images, PDFs/files, and audio are also supported through the iOS Share Extension and Android share intents.
 
-Native OCR, a real iOS Share Extension, audio recording and cloud sync are service integrations and are intentionally outside this UI codebase.
+Local Android release builds are unsigned unless `TUCK_ANDROID_KEYSTORE`, `TUCK_ANDROID_KEYSTORE_PASSWORD`, `TUCK_ANDROID_KEY_ALIAS`, and `TUCK_ANDROID_KEY_PASSWORD` are set. EAS production builds should use managed production credentials.
+
+Native OCR, direct document import, and cloud sync remain future integrations.

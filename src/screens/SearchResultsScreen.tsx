@@ -6,14 +6,21 @@ import { BackHeader, PrimaryButton, SearchPill, SectionLabel } from "../componen
 import { useAppStore } from "../store/AppStore";
 import { colors } from "../theme";
 import type { RootStackParamList } from "../types";
+import { matchesSearchFilters, type ContentFilter, type DateFilter } from "../utils/searchFilters";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SearchResults">;
 
 export function SearchResultsScreen({ navigation, route }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [contentFilter, setContentFilter] = useState<ContentFilter>();
+  const [dateFilter, setDateFilter] = useState<DateFilter>();
   const { captures, dark } = useAppStore();
   const query = route.params.query;
-  const results = useMemo(() => captures.filter((item) => `${item.title} ${item.body || ""} ${item.category || ""} ${item.metadataTitle || ""} ${item.metadataDescription || ""} ${item.metadataSiteName || ""}`.toLowerCase().includes(query.toLowerCase())), [captures, query]);
+  const results = useMemo(() => captures.filter((item) => {
+    const searchable = `${item.title} ${item.body || ""} ${item.userNote || ""} ${item.category || ""} ${item.metadataTitle || ""} ${item.metadataDescription || ""} ${item.metadataSiteName || ""}`;
+    return searchable.toLowerCase().includes(query.toLowerCase())
+      && matchesSearchFilters(item, contentFilter, dateFilter);
+  }), [captures, contentFilter, dateFilter, query]);
   return (
     <View style={[styles.screen, dark && styles.darkScreen]}>
       <BackHeader dark={dark} onBack={navigation.goBack} />
@@ -28,9 +35,9 @@ export function SearchResultsScreen({ navigation, route }: Props) {
           <Pressable style={[styles.sheet, dark && styles.darkSurface]} onPress={(event) => event.stopPropagation()}>
             <View style={styles.handle} /><Text style={[styles.title, dark && styles.darkText]}>Filters</Text>
             <SectionLabel>Content type</SectionLabel>
-            <View style={styles.wrap}>{["Links", "Screenshots", "Documents", "Notes"].map((item, index) => <Text key={item} style={[styles.chip, dark && styles.darkSurface, index === 0 && styles.activeChip]}>{item}</Text>)}</View>
+            <View style={styles.wrap}>{(["Links", "Screenshots", "Documents", "Notes", "Audio", "Tasks"] as ContentFilter[]).map((item) => <Pressable key={item} onPress={() => setContentFilter(contentFilter === item ? undefined : item)}><Text style={[styles.chip, dark && styles.darkSurface, contentFilter === item && styles.activeChip]}>{item}</Text></Pressable>)}</View>
             <SectionLabel>Date</SectionLabel>
-            <View style={styles.wrap}>{["Today", "This week", "This month"].map((item) => <Text key={item} style={[styles.chip, dark && styles.darkSurface]}>{item}</Text>)}</View>
+            <View style={styles.wrap}>{(["Today", "This week", "This month"] as DateFilter[]).map((item) => <Pressable key={item} onPress={() => setDateFilter(dateFilter === item ? undefined : item)}><Text style={[styles.chip, dark && styles.darkSurface, dateFilter === item && styles.activeChip]}>{item}</Text></Pressable>)}</View>
             <PrimaryButton onPress={() => setFiltersOpen(false)}>Apply</PrimaryButton>
           </Pressable>
         </Pressable>

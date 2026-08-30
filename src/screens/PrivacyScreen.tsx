@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Image, LockKeyhole, Share2, ShieldCheck, Trash2 } from "lucide-react-native";
+import { LockKeyhole, ShieldCheck, Trash2 } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackHeader } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
@@ -9,11 +9,9 @@ import type { RootStackParamList } from "../types";
 type Props = NativeStackScreenProps<RootStackParamList, "Privacy">;
 
 const rows = [
-  [LockKeyhole, "Everything you save is stored locally on your phone."],
-  [Image, "Text recognition can run entirely on device."],
+  [LockKeyhole, "Captures stay in Tuck’s protected app storage and are excluded from Android cloud backup."],
   [ShieldCheck, "An account is never required."],
-  [Share2, "Sync is optional, and off by default."],
-  [Trash2, "You can export or delete everything at any time."],
+  [Trash2, "You can delete everything at any time."],
 ] as const;
 
 export function PrivacyScreen({ navigation }: Props) {

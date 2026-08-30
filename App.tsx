@@ -1,11 +1,20 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { createNavigationContainerRef, DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
+import { useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ToastProvider } from "./src/components/ToastProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { AppStoreProvider, useAppStore } from "./src/store/AppStore";
+import type { RootStackParamList } from "./src/types";
+
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }),
+});
 
 const linking = {
   prefixes: [Linking.createURL("/")],
@@ -29,9 +38,22 @@ function processURL(url: string | null) {
 }
 
 function Root() {
-  const { dark } = useAppStore();
+  const { captures, dark, hydrated } = useAppStore();
+  const response = Notifications.useLastNotificationResponse();
+  const handledResponse = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const request = response?.notification.request;
+    const captureId = request?.content.data?.captureId;
+    if (!request || !hydrated || !navigationRef.isReady() || typeof captureId !== "string" || handledResponse.current === request.identifier) return;
+    handledResponse.current = request.identifier;
+    if (captures.some((capture) => capture.id === captureId)) navigationRef.navigate("CaptureDetail", { id: captureId });
+    else navigationRef.navigate("Main", { screen: "Inbox" });
+    Notifications.clearLastNotificationResponse();
+  }, [captures, hydrated, response]);
+
   return (
-    <NavigationContainer linking={linking} theme={dark ? DarkTheme : DefaultTheme}>
+    <NavigationContainer ref={navigationRef} linking={linking} theme={dark ? DarkTheme : DefaultTheme}>
       <StatusBar style={dark ? "light" : "dark"} />
       <SafeAreaView style={{ flex: 1, backgroundColor: dark ? "#000000" : "#F3F1ED" }} edges={["top"]}>
         <AppNavigator />

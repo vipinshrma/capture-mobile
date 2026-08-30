@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 import AVFoundation
 
 class ShareIntoViewController: SLComposeServiceViewController {
+  private let maxIncomingBytes = 100 * 1024 * 1024
   // Only the following two properties cause a hard-crash of the share extension, because the failure originates from
   // plugin misconfiguration. Other errors should be handled in the view controller and preferrably print a message, because it
   // is not possible for our users to handle them at runtime.
@@ -60,19 +61,17 @@ class ShareIntoViewController: SLComposeServiceViewController {
   }
 
   nonisolated private func processInputItems(_ items: [NSExtensionItem]) async -> [SharePayload] {
-    var results: [SharePayload] = []
-
     for item in items {
       guard let attachments = item.attachments else { continue }
 
       for provider in attachments {
         if let payload = await parseProvider(provider) {
-          results.append(payload)
+          return [payload]
         }
       }
     }
 
-    return results
+    return []
   }
 
   private func saveToUserDefaults(_ payload: [SharePayload]) {
@@ -130,6 +129,10 @@ class ShareIntoViewController: SLComposeServiceViewController {
           continuation.resume(returning: nil)
           return
         }
+        guard text.utf8.count <= 1_000_000 else {
+          continuation.resume(returning: nil)
+          return
+        }
 
         let payload = SharePayload(
           type: .text,
@@ -146,6 +149,10 @@ class ShareIntoViewController: SLComposeServiceViewController {
     return await withCheckedContinuation { continuation in
       provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
         guard let url = item as? URL else {
+          continuation.resume(returning: nil)
+          return
+        }
+        guard url.absoluteString.utf8.count <= 1_000_000 else {
           continuation.resume(returning: nil)
           return
         }
@@ -206,12 +213,11 @@ class ShareIntoViewController: SLComposeServiceViewController {
     }
 
     let fileName = url.lastPathComponent.isEmpty ? UUID().uuidString : url.lastPathComponent
-    let destinationURL = containerURL.appendingPathComponent(fileName)
+    let destinationURL = containerURL.appendingPathComponent(UUID().uuidString + "-" + fileName)
 
     do {
-      if FileManager.default.fileExists(atPath: destinationURL.path) {
-        try FileManager.default.removeItem(at: destinationURL)
-      }
+      let size = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int ?? 0
+      guard size <= maxIncomingBytes else { return nil }
       try FileManager.default.copyItem(at: url, to: destinationURL)
     } catch {
       print("Error copying file: \(error)")
@@ -236,6 +242,7 @@ class ShareIntoViewController: SLComposeServiceViewController {
   }
 
   private func saveDataToAppGroup(data: Data, fileName: String, type: ShareType, mimeType: String?) -> SharePayload? {
+    guard data.count <= maxIncomingBytes else { return nil }
     guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
       return nil
     }

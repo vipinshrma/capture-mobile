@@ -12,6 +12,10 @@ export type Capture = {
   metadataImage?: string;
   metadataSiteName?: string;
   localFileUri?: string;
+  capturedAt?: string;
+  userNote?: string;
+  mimeType?: string;
+  reminderNotificationId?: string;
   createdAt: string;
   favourite?: boolean;
   archived?: boolean;

@@ -12,7 +12,11 @@
       "bundleIdentifier": "com.capture.inbox"
     },
     "android": {
-      "package": "com.capture.inbox"
+      "package": "com.capture.inbox",
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "plugins": [
       [
@@ -32,12 +36,22 @@
             "activationRule": {
               "supportsText": true,
               "supportsWebPageWithMaxCount": 1,
-              "supportsWebUrlWithMaxCount": 1
+              "supportsWebUrlWithMaxCount": 1,
+              "supportsImageWithMaxCount": 1,
+              "supportsFileWithMaxCount": 1
             }
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Tuck to record voice notes."
+        }
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {

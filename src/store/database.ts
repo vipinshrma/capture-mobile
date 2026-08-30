@@ -21,6 +21,10 @@ type CaptureRow = {
   metadata_image: string | null;
   metadata_site_name: string | null;
   local_file_uri: string | null;
+  captured_at: string | null;
+  user_note: string | null;
+  mime_type: string | null;
+  reminder_notification_id: string | null;
   created_at: string;
   favourite: number;
   archived: number;
@@ -45,6 +49,10 @@ export async function initializeDatabase(fallback: PersistedState) {
       metadata_image TEXT,
       metadata_site_name TEXT,
       local_file_uri TEXT,
+      captured_at TEXT,
+      user_note TEXT,
+      mime_type TEXT,
+      reminder_notification_id TEXT,
       created_at TEXT NOT NULL,
       favourite INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
@@ -61,6 +69,10 @@ export async function initializeDatabase(fallback: PersistedState) {
   await addColumn(database, "captures", "metadata_image TEXT");
   await addColumn(database, "captures", "metadata_site_name TEXT");
   await addColumn(database, "captures", "local_file_uri TEXT");
+  await addColumn(database, "captures", "captured_at TEXT");
+  await addColumn(database, "captures", "user_note TEXT");
+  await addColumn(database, "captures", "mime_type TEXT");
+  await addColumn(database, "captures", "reminder_notification_id TEXT");
 
   const initialized = await database.getFirstAsync<{ value: string }>(
     "SELECT value FROM settings WHERE key = 'initialized'",
@@ -81,6 +93,7 @@ export async function initializeDatabase(fallback: PersistedState) {
   ]);
   const values = Object.fromEntries(settings.map(({ key, value }) => [key, value]));
 
+  const migratedAt = new Date().toISOString();
   return {
     database,
     state: {
@@ -99,6 +112,10 @@ export async function initializeDatabase(fallback: PersistedState) {
         metadataImage: row.metadata_image || undefined,
         metadataSiteName: row.metadata_site_name || undefined,
         localFileUri: row.local_file_uri || undefined,
+        capturedAt: row.captured_at || migratedAt,
+        userNote: row.user_note || undefined,
+        mimeType: row.mime_type || undefined,
+        reminderNotificationId: row.reminder_notification_id || undefined,
         createdAt: row.created_at,
         favourite: Boolean(row.favourite),
         archived: Boolean(row.archived),
@@ -114,8 +131,8 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
     for (const [position, capture] of state.captures.entries()) {
       await database.runAsync(
         `INSERT INTO captures
-          (id, kind, title, body, source, category, metadata_title, metadata_description, metadata_image, metadata_site_name, local_file_uri, created_at, favourite, archived, position)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, kind, title, body, source, category, metadata_title, metadata_description, metadata_image, metadata_site_name, local_file_uri, captured_at, user_note, mime_type, reminder_notification_id, created_at, favourite, archived, position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         capture.id,
         capture.kind,
         capture.title,
@@ -127,6 +144,10 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
         capture.metadataImage ?? null,
         capture.metadataSiteName ?? null,
         capture.localFileUri ?? null,
+        capture.capturedAt ?? null,
+        capture.userNote ?? null,
+        capture.mimeType ?? null,
+        capture.reminderNotificationId ?? null,
         capture.createdAt,
         capture.favourite ? 1 : 0,
         capture.archived ? 1 : 0,
@@ -163,7 +184,9 @@ function normalizeLegacyState(value: string | null, fallback: PersistedState): P
     return {
       onboarded: typeof parsed.onboarded === "boolean" ? parsed.onboarded : fallback.onboarded,
       dark: typeof parsed.dark === "boolean" ? parsed.dark : fallback.dark,
-      captures: Array.isArray(parsed.captures) ? parsed.captures.filter(isCapture) : fallback.captures,
+      captures: Array.isArray(parsed.captures)
+        ? parsed.captures.filter(isCapture).map((capture) => ({ ...capture, capturedAt: capture.capturedAt || new Date().toISOString() }))
+        : fallback.captures,
       reviewIndex: typeof parsed.reviewIndex === "number" && parsed.reviewIndex >= 0
         ? parsed.reviewIndex
         : fallback.reviewIndex,
