@@ -3,12 +3,18 @@ import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const siteUrlValue = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
-if (!siteUrl) throw new Error("NEXT_PUBLIC_SITE_URL is required");
+if (!siteUrlValue) throw new Error("NEXT_PUBLIC_SITE_URL is required");
+
+const siteUrl = new URL(siteUrlValue);
+
+if (siteUrl.protocol !== "https:" && siteUrl.protocol !== "http:") {
+  throw new Error("NEXT_PUBLIC_SITE_URL must be an absolute HTTP(S) URL");
+}
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: siteUrl,
   title: "Tuck: Save it now. Find it when it matters.",
   description:
     "Tuck is one private inbox for links, screenshots, notes, documents, and voice notes, without folders, tags, or setup.",
@@ -42,7 +48,7 @@ const softwareApplication = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "Tuck",
-  url: siteUrl,
+  url: siteUrl.href,
   applicationCategory: "ProductivityApplication",
   operatingSystem: "iOS, Android",
   description: "A private, local-first inbox for links, screenshots, notes, documents, and voice notes.",
