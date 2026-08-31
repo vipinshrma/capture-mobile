@@ -6,7 +6,7 @@
     "dev": "next dev -p 4173",
     "build": "next build",
     "start": "next start -p 4173",
-    "test": "npm run build && node --test tests/landing.test.mjs",
+    "test": "NEXT_PUBLIC_SITE_URL=https://capture-mobile.vercel.app npm run build && node --test tests/landing.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,26 +1,42 @@
+import Image from "next/image";
+
 type PreviewKind = "inbox" | "capture" | "search" | "detail" | "review";
 
-const content = {
-  inbox: { title: "Inbox", eyebrow: "All captures", cards: ["Building reliable offline-first applications", "Save immediately. Organize later.", "Mobile Capture Product Research"] },
-  capture: { title: "Quick Capture", eyebrow: "Save something", cards: ["Write a note", "Record voice", "Choose photo", "Paste link"] },
-  search: { title: "Search Results", eyebrow: "3 results", cards: ["Links · This week", "Local-first is the new offline-first", "Building reliable offline-first applications"] },
-  detail: { title: "Voice note", eyebrow: "Capture detail", cards: ["▶  00:32", "Add a note", "Share     Favourite"] },
-  review: { title: "Review", eyebrow: "1 of 4", cards: ["Review PR #482 before standup", "Keep", "Archive     Remind"] },
-} satisfies Record<PreviewKind, { title: string; eyebrow: string; cards: string[] }>;
+const previews = {
+  inbox: {
+    src: "/assets/screens/inbox.png",
+    alt: "Generated preview of the Tuck Inbox with saved links, notes, and images",
+  },
+  capture: {
+    src: "/assets/screens/quick-capture.png",
+    alt: "Generated preview of Tuck Quick Capture with note, voice, photo, and link choices",
+  },
+  search: {
+    src: "/assets/screens/search-results.png",
+    alt: "Generated preview of Tuck Search Results with content type and date filters",
+  },
+  detail: {
+    src: "/assets/screens/capture-detail.png",
+    alt: "Generated preview of a Tuck voice-note detail with playback, note, and capture actions",
+  },
+  review: {
+    src: "/assets/screens/review.png",
+    alt: "Generated dark-mode preview of the Tuck Review queue with keep, archive, remind, and open actions",
+  },
+} satisfies Record<PreviewKind, { src: string; alt: string }>;
 
-export function AppPreview({ kind, compact = false }: { kind: PreviewKind; compact?: boolean }) {
-  const screen = content[kind];
+export function AppPreview({ kind, compact = false, priority = false }: { kind: PreviewKind; compact?: boolean; priority?: boolean }) {
+  const preview = previews[kind];
+
   return (
-    <div className={`app-preview preview-${kind}${compact ? " compact" : ""}`} role="img" aria-label={`${screen.title} screen in Tuck`}>
-      <div className="status-bar"><span>10:03</span><span>5G</span></div>
-      <div className="preview-heading"><small>{screen.eyebrow}</small><strong>{screen.title}</strong></div>
-      {kind === "inbox" && <div className="preview-filters"><span>All</span><span>Links</span><span>Notes</span></div>}
-      {kind === "search" && <div className="preview-search">Search your captures</div>}
-      <div className="preview-cards">
-        {screen.cards.map((card, index) => <div className={`preview-card card-${index}`} key={card}><span>{card}</span>{index > 0 && <small>{index === 1 ? "Today" : "Saved in Tuck"}</small>}</div>)}
-      </div>
-      {kind === "review" && <button type="button" tabIndex={-1}>Open capture</button>}
-      <div className="home-indicator" />
-    </div>
+    <Image
+      className={`app-preview-image${compact ? " compact" : ""}`}
+      src={preview.src}
+      alt={preview.alt}
+      width={768}
+      height={1152}
+      sizes={compact ? "(max-width: 720px) 65vw, 260px" : "(max-width: 720px) 76vw, 320px"}
+      priority={priority}
+    />
   );
 }

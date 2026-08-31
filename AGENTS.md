@@ -26,7 +26,7 @@ Implemented:
 - Incoming single-item sharing on iOS and Android through `expo-sharing`; text, URLs, images, PDFs/files, and audio are saved with the correct kind, and attachments are copied to durable local storage.
 - Capture Detail note editing, clipboard copy, native sharing, favourite feedback, local Review notifications with tap-through navigation, and confirmed Delete All with attachment cleanup.
 - Security hardening for durable and staging-file deletion, 100 MB attachment and 1 MB shared-text limits, generic lock-screen reminder copy, Android backup/overlay restrictions, production signing safeguards, and an audited dependency graph with no known vulnerabilities.
-- Static Next.js landing page with an email/platform waitlist, light and dark themes, truthful feature/privacy copy, and explicit Formspree and Vercel Web Analytics disclosure.
+- Static Next.js landing page with light/dark themes, reduced-motion-safe entrance and scroll animations, Formspree waitlist forms, Vercel Web Analytics, truthful feature/privacy copy, five generated raster feature previews, production canonical and social metadata, JSON-LD, crawlable robots and sitemap routes, a 1200×630 social preview, and a noindex waitlist confirmation route.
 
 Known remaining work:
 
@@ -35,6 +35,7 @@ Known remaining work:
 - Complete physical-device photo-picker and microphone-permission checks on both iOS and Android.
 - Complete physical-device share-sheet and notification checks on both iOS and Android before release.
 - Configure and verify production Android signing credentials before distributing a release build.
+- Replace the landing page’s labelled interface previews with sanitized, same-size physical-device screenshots before public launch. Search Console setup, sitemap submission, and a real Formspree submission check require owner access or approval.
 
 ## Required screens
 

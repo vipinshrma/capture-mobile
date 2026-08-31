@@ -1,23 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { FORM_ENDPOINT, FORMSPREE_FORM_ID } from "../lib/config";
+import { FormEvent, useRef, useState } from "react";
+import { FORM_ENDPOINT, FORMSPREE_FORM_ID, THANKS_URL } from "../lib/config";
 
 type FormState = "idle" | "loading" | "success" | "error" | "unconfigured";
 
 export function WaitlistForm() {
   const [state, setState] = useState<FormState>("idle");
+  const submitting = useRef(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     const form = event.currentTarget;
-    if (!form.checkValidity()) return;
-
     event.preventDefault();
+    if (!form.reportValidity() || submitting.current) return;
     if (!FORMSPREE_FORM_ID) {
       setState("unconfigured");
       return;
     }
 
+    submitting.current = true;
     setState("loading");
     try {
       const response = await fetch(FORM_ENDPOINT, {
@@ -26,9 +27,10 @@ export function WaitlistForm() {
         headers: { Accept: "application/json" },
       });
       if (!response.ok) throw new Error("Submission failed");
-      form.reset();
       setState("success");
+      window.location.assign("/thanks");
     } catch {
+      submitting.current = false;
       setState("error");
     }
   }
@@ -36,13 +38,13 @@ export function WaitlistForm() {
   const message = {
     idle: "",
     loading: "Submitting your request…",
-    success: "You’re on the list. We’ll email you when your beta spot is ready.",
+    success: "Registration confirmed. Opening the confirmation page…",
     error: "We couldn’t join the waitlist. Your details are still here. Please try again.",
     unconfigured: "Waitlist submissions are not configured yet. Add NEXT_PUBLIC_FORMSPREE_FORM_ID before launch.",
   }[state];
 
   return (
-    <form className="waitlist-form" action={FORM_ENDPOINT} method="post" onSubmit={submit}>
+    <form className="waitlist-form" action={FORM_ENDPOINT || undefined} method="post" onSubmit={submit}>
       {state !== "success" && (
         <>
           <div className="form-grid">
@@ -71,6 +73,7 @@ export function WaitlistForm() {
             <input name="_gotcha" tabIndex={-1} autoComplete="off" />
           </label>
           <input type="hidden" name="_subject" value="New Tuck waitlist signup" />
+          <input type="hidden" name="_next" value={THANKS_URL} />
           <button className="button" type="submit" disabled={state === "loading"}>
             {state === "loading" ? "Joining…" : state === "error" ? "Try again" : "Join waitlist"}
           </button>
