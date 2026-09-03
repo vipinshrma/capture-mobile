@@ -4,10 +4,11 @@ import * as Clipboard from "expo-clipboard";
 import { shareAsync } from "expo-sharing";
 import { useEffect, useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
-import { Archive, ArrowLeft, Copy, Heart, Pause, Play, Share2, Trash2 } from "lucide-react-native";
+import { Archive, Copy, Heart, Pause, Play, Share2, Trash2, type LucideIcon } from "lucide-react-native";
 import { useAppStore } from "../store/AppStore";
 import { useToast } from "../components/ToastProvider";
-import { colors, shadow } from "../theme";
+import { BackHeader, PrimaryButton, Screen, SectionLabel } from "../components/ui";
+import { getTheme, radius, shadow, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
 import { getImageUri, getPlatform, getSourceUrl } from "../utils/capture";
 
@@ -15,6 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "CaptureDetail">;
 
 export function CaptureDetailScreen({ navigation, route }: Props) {
   const { captures, dark, toggleFavourite, archiveCapture, deleteCapture, updateCaptureNote } = useAppStore();
+  const theme = getTheme(dark);
   const toast = useToast();
   const id = route.params?.id || captures[0]?.id;
   const capture = captures.find((item) => item.id === id);
@@ -25,28 +27,18 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
 
   useEffect(() => setNote(capture?.userNote || ""), [capture?.id, capture?.userNote]);
 
-  if (!capture) {
-    return <View style={styles.center}><Text>This capture no longer exists.</Text></View>;
-  }
-  const card = dark ? colors.darkCard : colors.card;
-  const text = dark ? colors.darkText : colors.text;
+  if (!capture) return <Screen><View style={styles.center}><Text style={{ color: theme.text }}>This capture no longer exists.</Text></View></Screen>;
+
   const imageUri = getImageUri(capture);
   const platform = getPlatform(capture.source, capture.title);
   const sourceUrl = getSourceUrl(capture.source, capture.title);
   const extractedText = capture.body || capture.metadataDescription;
-  const saveNote = () => {
-    updateCaptureNote(capture.id, note);
-    toast("Note saved");
-  };
+  const noteChanged = note.trim() !== (capture.userNote || "");
+  const saveNote = () => { updateCaptureNote(capture.id, note); toast("Note saved"); };
   const copyText = async () => {
     if (!extractedText) return;
-    try {
-      await Clipboard.setStringAsync(extractedText);
-      toast("Copied");
-    } catch (error) {
-      console.error("Failed to copy capture text", error);
-      Alert.alert("Couldn’t copy this text", "Please try again.");
-    }
+    try { await Clipboard.setStringAsync(extractedText); toast("Copied"); }
+    catch (error) { console.error("Failed to copy capture text", error); Alert.alert("Couldn’t copy this text", "Please try again."); }
   };
   const share = async () => {
     try {
@@ -57,96 +49,79 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
         const result = await Share.share({ message: [...new Set([capture.title, extractedText, capture.userNote, sourceUrl].filter(Boolean))].join("\n\n"), url: sourceUrl });
         if (result.action === Share.sharedAction) toast("Shared");
       }
-    } catch (error) {
-      console.error("Failed to share capture", error);
-      Alert.alert("Couldn’t share this capture", "Please try again.");
-    }
+    } catch (error) { console.error("Failed to share capture", error); Alert.alert("Couldn’t share this capture", "Please try again."); }
   };
+  const archive = () => { archiveCapture(capture.id); toast("Archived"); navigation.navigate("Main"); };
   const remove = () => Alert.alert("Delete this capture?", "This can’t be undone.", [
     { text: "Cancel", style: "cancel" },
     { text: "Delete", style: "destructive", onPress: async () => {
-      if (await deleteCapture(capture.id)) {
-        toast("Deleted");
-        navigation.navigate("Main");
-      } else Alert.alert("Couldn’t delete this capture", "Please try again.");
+      if (await deleteCapture(capture.id)) { toast("Deleted"); navigation.navigate("Main"); }
+      else Alert.alert("Couldn’t delete this capture", "Please try again.");
     } },
   ]);
 
   return (
-    <View style={[styles.screen, dark && styles.darkScreen]}>
-      <View style={styles.actions}>
-        <Pressable onPress={back} style={[styles.circle, { backgroundColor: card }]}><ArrowLeft size={18} color={colors.accent} /></Pressable>
-        <View style={styles.actionGroup}>
-          <Pressable accessibilityLabel={capture.favourite ? "Remove from favourites" : "Add to favourites"} onPress={() => { toggleFavourite(capture.id); toast(capture.favourite ? "Removed from Favourites" : "Added to Favourites"); }} style={[styles.circle, { backgroundColor: card }]}><Heart size={18} color={capture.favourite ? colors.warning : colors.accent} fill={capture.favourite ? colors.warning : "transparent"} /></Pressable>
-          <Pressable accessibilityLabel="Share capture" onPress={share} style={[styles.circle, { backgroundColor: card }]}><Share2 size={18} color={colors.accent} /></Pressable>
-        </View>
-      </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        {capture.kind === "voice" && capture.localFileUri ? (
-          <VoicePlayer uri={capture.localFileUri} dark={dark} />
-        ) : imageUri && !imageFailed ? (
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} />
-        ) : (
-          <View style={styles.preview}><View style={styles.browserBar} /><View style={styles.line} /><View style={[styles.line, { width: "58%" }]} /><View style={[styles.line, { width: "75%" }]} /></View>
-        )}
+    <Screen>
+      <BackHeader onBack={back} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.screenTitle, { color: theme.text }]}>Capture Detail</Text>
         <View style={styles.metaRow}>
-          {platform && !logoFailed && <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} />}
-          {platform && logoFailed && <Text style={styles.platformText}>{platform.label}</Text>}
-          <Text style={styles.badge}>{capture.category || capture.kind}</Text>
-          <Pressable disabled={!sourceUrl} onPress={() => sourceUrl && Linking.openURL(sourceUrl)}>
-          <Text style={[styles.meta, sourceUrl && styles.link]}>{capture.metadataSiteName || platform?.name || capture.source} · {capture.createdAt}</Text>
-          </Pressable>
+          {platform && !logoFailed ? <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /> : null}
+          {platform && logoFailed ? <Text style={[styles.platformText, { color: theme.accentText }]}>{platform.label}</Text> : null}
+          <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}><Text style={[styles.badgeText, { color: theme.accentText }]}>{capture.category || capture.kind}</Text></View>
+          <Pressable disabled={!sourceUrl} onPress={() => sourceUrl && Linking.openURL(sourceUrl)}><Text numberOfLines={1} style={[styles.meta, { color: sourceUrl ? theme.accentText : theme.textMuted }]}>{capture.metadataSiteName || platform?.name || capture.source} · {capture.createdAt}</Text></Pressable>
         </View>
-        <Text style={[styles.title, { color: text }]}>{capture.title}</Text>
-        <View style={[styles.extracted, { backgroundColor: card }]}>
-          <Text style={[styles.extractedTitle, { color: text }]}>Saved text</Text>
-          <Text style={styles.body}>{extractedText || "No saved text is available for this capture."}</Text>
-          {extractedText && <Pressable accessibilityLabel="Copy saved text" onPress={copyText} style={styles.copy}><Copy size={15} color={colors.accent} /><Text style={styles.accentText}>Copy saved text</Text></Pressable>}
+        <Text style={[styles.title, { color: theme.text }]}>{capture.title}</Text>
+
+        {capture.kind === "voice" && capture.localFileUri ? <VoicePlayer uri={capture.localFileUri} dark={dark} /> : imageUri && !imageFailed ? <Image source={{ uri: imageUri }} style={[styles.imagePreview, { backgroundColor: theme.surfaceMuted }]} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} /> : <View style={[styles.preview, { backgroundColor: theme.accentSoft }]}><View style={[styles.browserBar, { backgroundColor: theme.surface }]} /><View style={[styles.line, { backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "58%", backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "75%", backgroundColor: theme.accent }]} /></View>}
+
+        <View style={[styles.extracted, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.extractedHeader}><Text style={[styles.extractedTitle, { color: theme.text }]}>Saved text</Text>{extractedText ? <Pressable accessibilityLabel="Copy saved text" onPress={copyText} style={styles.copy}><Copy size={16} color={theme.accentText} /><Text style={[styles.accentText, { color: theme.accentText }]}>Copy</Text></Pressable> : null}</View>
+          <Text style={[styles.body, { color: theme.textSecondary }]}>{extractedText || "No saved text is available for this capture."}</Text>
         </View>
-        <TextInput multiline value={note} onChangeText={setNote} placeholder="Add a note…" placeholderTextColor={colors.faint} style={[styles.input, { backgroundColor: card, color: text }]} />
-        <Pressable accessibilityRole="button" disabled={note.trim() === (capture.userNote || "")} onPress={saveNote} style={[styles.saveNote, note.trim() === (capture.userNote || "") && styles.disabled]}><Text style={styles.saveNoteText}>Save Note</Text></Pressable>
-        <View style={styles.chips}>
-          <Pressable onPress={() => { archiveCapture(capture.id); toast("Archived"); navigation.navigate("Main"); }} style={styles.chip}><Archive size={14} color={colors.secondary} /><Text style={styles.chipText}>Archive</Text></Pressable>
-          <Pressable onPress={remove} style={styles.chip}><Trash2 size={14} color={colors.danger} /><Text style={styles.danger}>Delete</Text></Pressable>
+
+        <View style={styles.noteSection}>
+          <SectionLabel>Your note</SectionLabel>
+          <TextInput accessibilityLabel="Capture note" multiline value={note} onChangeText={setNote} placeholder="Add a note…" placeholderTextColor={theme.textMuted} style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} />
+          <PrimaryButton disabled={!noteChanged} onPress={saveNote}>Save Note</PrimaryButton>
+        </View>
+
+        <View style={styles.actions}>
+          <DetailAction icon={Share2} label="Share" onPress={() => void share()} />
+          <DetailAction icon={Heart} label="Favourite" active={Boolean(capture.favourite)} onPress={() => { toggleFavourite(capture.id); toast(capture.favourite ? "Removed from Favourites" : "Added to Favourites"); }} />
+          <DetailAction icon={Archive} label="Archive" onPress={archive} />
+          <DetailAction icon={Trash2} label="Delete" danger onPress={remove} />
         </View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
+function DetailAction({ icon: Icon, label, onPress, active = false, danger = false }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; danger?: boolean }) {
+  const { dark } = useAppStore();
+  const theme = getTheme(dark);
+  const color = danger ? theme.danger : active ? theme.accentText : theme.text;
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.detailAction, pressed && styles.pressed]}><View style={[styles.actionCircle, { backgroundColor: active ? theme.accentSoft : theme.surface, borderColor: danger ? theme.danger : theme.border }]}><Icon size={22} color={color} fill={active ? color : "transparent"} /></View><Text numberOfLines={1} style={[styles.actionLabel, { color }]}>{label}</Text></Pressable>;
+}
+
 function VoicePlayer({ uri, dark }: { uri: string; dark: boolean }) {
+  const theme = getTheme(dark);
   const player = useAudioPlayer(uri, { updateInterval: 250 });
   const status = useAudioPlayerStatus(player);
   const duration = status.duration || 0;
   const progress = duration ? Math.min(status.currentTime / duration, 1) : 0;
-
   const toggle = async () => {
-    if (status.playing) {
-      player.pause();
-      return;
-    }
+    if (status.playing) { player.pause(); return; }
     if (duration && status.currentTime >= duration - 0.1) await player.seekTo(0);
     player.play();
   };
-
   return (
-    <View style={[styles.voicePlayer, dark && { backgroundColor: colors.darkCard }]}>
-      <Pressable
-        accessibilityLabel={status.playing ? "Pause voice note" : "Play voice note"}
-        accessibilityRole="button"
-        disabled={!status.isLoaded}
-        onPress={() => void toggle()}
-        style={[styles.playButton, !status.isLoaded && styles.disabled]}
-      >
-        {status.playing ? <Pause size={25} color="white" fill="white" /> : <Play size={25} color="white" fill="white" />}
-      </Pressable>
+    <View style={[styles.voicePlayer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <Pressable accessibilityLabel={status.playing ? "Pause voice note" : "Play voice note"} accessibilityRole="button" disabled={!status.isLoaded} onPress={() => void toggle()} style={[styles.playButton, { backgroundColor: theme.accent }, !status.isLoaded && styles.disabled]}>{status.playing ? <Pause size={25} color={theme.onAccent} fill={theme.onAccent} /> : <Play size={25} color={theme.onAccent} fill={theme.onAccent} />}</Pressable>
       <View style={styles.voiceProgress}>
-        <Text style={[styles.voiceLabel, dark && { color: colors.darkText }]}>{status.isLoaded ? "Voice note" : "Loading recording…"}</Text>
-        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress * 100}%` }]} /></View>
-        <View style={styles.timeRow}>
-          <Text style={styles.time}>{formatTime(status.currentTime)}</Text>
-          <Text style={styles.time}>{formatTime(duration)}</Text>
-        </View>
+        <Text style={[styles.voiceLabel, { color: theme.text }]}>{status.isLoaded ? "Voice note" : "Loading recording…"}</Text>
+        <View style={[styles.progressTrack, { backgroundColor: theme.accentSoft }]}><View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: theme.accent }]} /></View>
+        <View style={styles.timeRow}><Text style={[styles.time, { color: theme.textMuted }]}>{formatTime(status.currentTime)}</Text><Text style={[styles.time, { color: theme.textMuted }]}>{formatTime(duration)}</Text></View>
       </View>
     </View>
   );
@@ -158,43 +133,40 @@ function formatTime(seconds: number) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  darkScreen: { backgroundColor: colors.darkBackground },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  actions: { padding: 12, paddingHorizontal: 16, flexDirection: "row", justifyContent: "space-between" },
-  actionGroup: { flexDirection: "row", gap: 8 },
-  circle: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", ...shadow },
-  content: { padding: 16, paddingBottom: 40, gap: 16 },
-  preview: { height: 200, borderRadius: 20, backgroundColor: "#DDD9F0", justifyContent: "center", padding: 28, gap: 12, ...shadow },
-  imagePreview: { height: 260, borderRadius: 20, backgroundColor: colors.surface, ...shadow },
-  voicePlayer: { minHeight: 132, padding: 20, borderRadius: 20, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 16, ...shadow },
-  playButton: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
-  voiceProgress: { flex: 1, gap: 8 },
-  voiceLabel: { color: colors.text, fontSize: 16, fontWeight: "700" },
-  progressTrack: { height: 5, borderRadius: 3, overflow: "hidden", backgroundColor: colors.accentSoft },
-  progressFill: { height: "100%", borderRadius: 3, backgroundColor: colors.accent },
-  timeRow: { flexDirection: "row", justifyContent: "space-between" },
-  time: { color: colors.muted, fontSize: 12 },
-  browserBar: { height: 22, borderRadius: 7, backgroundColor: "rgba(255,255,255,.75)" },
-  line: { width: "86%", height: 7, borderRadius: 4, backgroundColor: "rgba(66,63,145,.32)" },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  content: { paddingHorizontal: spacing.md, paddingBottom: 48, gap: spacing.md },
+  screenTitle: { ...type.display },
+  metaRow: { minHeight: 28, flexDirection: "row", alignItems: "center", gap: 7 },
   platformLogo: { width: 22, height: 22, borderRadius: 5 },
-  platformText: { minWidth: 22, color: colors.accent, fontSize: 12, fontWeight: "800", textAlign: "center" },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, color: colors.accent, backgroundColor: colors.accentSoft, fontSize: 11, fontWeight: "600", textTransform: "capitalize" },
-  meta: { color: colors.muted, fontSize: 12.5 },
-  link: { color: colors.accent },
-  title: { fontSize: 21, lineHeight: 28, fontWeight: "700" },
-  extracted: { padding: 16, borderRadius: 16, gap: 7, ...shadow },
-  extractedTitle: { fontSize: 15.5, fontWeight: "600" },
-  body: { color: colors.secondary, fontSize: 14, lineHeight: 21 },
-  copy: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 5 },
-  accentText: { color: colors.accent, fontSize: 14, fontWeight: "600" },
-  input: { minHeight: 64, borderRadius: 14, padding: 13, textAlignVertical: "top" },
-  saveNote: { alignSelf: "flex-end", paddingHorizontal: 16, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
-  saveNoteText: { color: "white", fontWeight: "600" },
-  disabled: { opacity: 0.4 },
-  chips: { flexDirection: "row", gap: 8 },
-  chip: { height: 36, paddingHorizontal: 13, borderRadius: 18, backgroundColor: colors.surface, flexDirection: "row", alignItems: "center", gap: 5 },
-  chipText: { color: colors.secondary },
-  danger: { color: colors.danger },
+  platformText: { minWidth: 22, fontSize: 12, fontWeight: "800", textAlign: "center" },
+  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
+  badgeText: { ...type.meta, fontWeight: "700", textTransform: "capitalize" },
+  meta: { ...type.meta, maxWidth: 230 },
+  title: { ...type.title },
+  preview: { height: 210, borderRadius: radius.lg, justifyContent: "center", padding: 28, gap: spacing.sm, ...shadow },
+  imagePreview: { height: 280, borderRadius: radius.lg, ...shadow },
+  browserBar: { height: 24, borderRadius: 8, opacity: 0.82 },
+  line: { width: "86%", height: 7, borderRadius: radius.full, opacity: 0.25 },
+  voicePlayer: { minHeight: 150, padding: spacing.lg, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.md, ...shadow },
+  playButton: { width: 62, height: 62, borderRadius: 31, alignItems: "center", justifyContent: "center" },
+  voiceProgress: { flex: 1, gap: spacing.xs },
+  voiceLabel: { ...type.cardTitle },
+  progressTrack: { height: 5, borderRadius: radius.full, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: radius.full },
+  timeRow: { flexDirection: "row", justifyContent: "space-between" },
+  time: { ...type.meta },
+  extracted: { padding: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, gap: spacing.xs },
+  extractedHeader: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  extractedTitle: { ...type.cardTitle },
+  body: { ...type.body },
+  copy: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: spacing.md },
+  accentText: { ...type.label },
+  noteSection: { gap: spacing.sm },
+  input: { minHeight: 130, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.md, ...type.body, textAlignVertical: "top" },
+  actions: { flexDirection: "row", justifyContent: "space-between", gap: spacing.xs, marginTop: spacing.xs },
+  detailAction: { flex: 1, minWidth: 0, alignItems: "center", gap: spacing.xs },
+  actionCircle: { width: 58, height: 58, borderRadius: 29, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  actionLabel: { fontSize: 11.5, lineHeight: 16, fontWeight: "600" },
+  pressed: { opacity: 0.68, transform: [{ scale: 0.97 }] },
+  disabled: { opacity: 0.42 },
 });

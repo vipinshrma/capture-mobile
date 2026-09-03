@@ -3,52 +3,48 @@ import { useNavigation } from "@react-navigation/native";
 import { ChevronRight, Search, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { ScreenTitle, SectionLabel } from "../components/ui";
+import { FilterChip, Screen, ScreenTitle, SectionLabel } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
-import { colors, shadow } from "../theme";
+import { getTheme, radius, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
 
 export function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { dark } = useAppStore();
+  const theme = getTheme(dark);
   const [query, setQuery] = useState("");
   const search = (value = query) => value.trim() && navigation.navigate("SearchResults", { query: value.trim() });
   return (
-    <View style={[styles.screen, dark && styles.darkScreen]}>
-      <ScreenTitle title="Search" dark={dark} />
-      <View style={[styles.search, dark && styles.darkSurface]}>
-        <Search size={17} color={colors.muted} />
-        <TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => search()} placeholder="Search everything" placeholderTextColor={colors.muted} style={[styles.input, dark && styles.darkText]} />
-        {!!query && <Pressable onPress={() => setQuery("")}><X size={17} color={colors.muted} /></Pressable>}
+    <Screen>
+      <ScreenTitle title="Search" subtitle="Find anything you saved" />
+      <View style={[styles.search, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Search size={19} color={theme.textMuted} />
+        <TextInput accessibilityLabel="Search captures" returnKeyType="search" value={query} onChangeText={setQuery} onSubmitEditing={() => search()} placeholder="Search everything" placeholderTextColor={theme.textMuted} style={[styles.input, { color: theme.text }]} />
+        {!!query && <Pressable accessibilityLabel="Clear search" onPress={() => setQuery("")} style={styles.clear}><X size={18} color={theme.textMuted} /></Pressable>}
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <SectionLabel>Try a search</SectionLabel>
         {["offline-first", "product research", "review"].map((item) => (
-          <Pressable key={item} onPress={() => search(item)} style={styles.row}><Search size={17} color={colors.muted} /><Text style={[styles.rowText, dark && styles.darkText]}>{item}</Text><ChevronRight size={16} color={colors.faint} /></Pressable>
+          <Pressable key={item} onPress={() => search(item)} style={[styles.row, { borderBottomColor: theme.border }]}><Search size={17} color={theme.textMuted} /><Text style={[styles.rowText, { color: theme.text }]}>{item}</Text><ChevronRight size={17} color={theme.textMuted} /></Pressable>
         ))}
         <View style={styles.suggested}>
           <SectionLabel>Suggested categories</SectionLabel>
-          <View style={styles.wrap}>{["Development", "Screenshot", "Idea"].map((item) => <Pressable key={item} onPress={() => search(item)} style={[styles.chip, dark && styles.darkSurface]}><Text style={[styles.chipText, dark && { color: colors.faint }]}>{item}</Text></Pressable>)}</View>
+          <View style={styles.wrap}>{["Development", "Screenshot", "Idea"].map((item) => <FilterChip key={item} label={item} onPress={() => search(item)} />)}</View>
         </View>
-        <Text style={styles.helper}>Search titles, notes, URLs, categories, and saved details.</Text>
+        <Text style={[styles.helper, { color: theme.textMuted }]}>Search titles, notes, URLs, categories, and saved details.</Text>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  darkScreen: { backgroundColor: colors.darkBackground },
-  darkSurface: { backgroundColor: colors.darkCard },
-  darkText: { color: colors.darkText },
-  search: { height: 42, marginHorizontal: 16, borderRadius: 21, paddingHorizontal: 14, backgroundColor: "white", flexDirection: "row", alignItems: "center", gap: 8, ...shadow },
-  input: { flex: 1, color: colors.text, fontSize: 15 },
-  content: { padding: 20 },
-  row: { minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator, flexDirection: "row", alignItems: "center", gap: 12 },
-  rowText: { flex: 1, color: colors.text, fontSize: 16 },
-  suggested: { marginTop: 22, gap: 9 },
+  search: { minHeight: 52, marginHorizontal: spacing.md, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  input: { flex: 1, ...type.body },
+  clear: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -12 },
+  content: { padding: spacing.lg },
+  row: { minHeight: 58, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  rowText: { flex: 1, ...type.body, fontWeight: "600" },
+  suggested: { marginTop: spacing.xl, gap: spacing.xs },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: colors.surface },
-  chipText: { color: colors.secondary, fontSize: 13 },
-  helper: { marginTop: 26, color: colors.faint, fontSize: 13, lineHeight: 19 },
+  helper: { marginTop: spacing.xxl, ...type.meta },
 });

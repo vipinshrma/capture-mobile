@@ -20,6 +20,8 @@ Core product flow:
 
 Implemented:
 
+- Unified cross-platform design system derived from the Tuck landing previews: semantic light/dark palettes, standardized typography, spacing and radii, reusable headers, buttons, chips, sheets and empty states, richer standard/compact capture cards, and consistent navigation and toast feedback across every app surface.
+- Redesigned onboarding, Inbox, Search, Search Results and filters, Quick Capture, incoming Share Capture, Capture Detail, Review and reminders, Settings, Privacy, Archive, Favourites, and completion/empty states without changing their existing routes or behaviors.
 - Expo 55 app shell, typed stack/tab navigation, all required UI surfaces, dark mode across primary screens, and animated toast feedback.
 - SQLite persistence for onboarding, appearance, captures, timestamps, user notes, local attachments, favourites, archive state, reminders, and review position, including additive migrations and legacy AsyncStorage migration.
 - Inbox filters for links, images, notes, and documents; Search Results type/date filters; in-memory search across capture, metadata, and user-note fields; quick capture for notes, links, photos, and recorded audio; capture detail, review, archive, favourites, and destructive confirmations.
@@ -31,7 +33,6 @@ Implemented:
 Known remaining work:
 
 - Add task creation, native OCR, direct document import, optional cloud sync, and backend services only when requested.
-- Complete dark-mode styling for Quick Capture and incoming Share Capture sheets.
 - Complete physical-device photo-picker and microphone-permission checks on both iOS and Android.
 - Complete physical-device share-sheet and notification checks on both iOS and Android before release.
 - Configure and verify production Android signing credentials before distributing a release build.
@@ -96,18 +97,15 @@ Rules:
 
 ## Design direction
 
-- Premium, softly layered iOS interface
-- Background: `#F3F1ED`
-- Primary accent: `#423F91`
-- Card surface: `#FFFFFF`
-- Dark background: `#000000`
-- Dark card: `#1C1C1E`
-- Content card radius: `22`
-- Horizontal screen spacing: `16–20`
-- System/SF Pro-style typography
-- Large titles: `32`, bold
-- Pill-shaped search fields, filters, and primary controls
-- Native-feeling stack, tab, sheet, alert, and toast transitions
+- Cross-platform premium productivity interface with native-safe iOS and Android behavior
+- Light background: `#F3F1ED`; light surface: `#FDFDFC`
+- Dark background: `#0D0D0F`; dark surface: `#1A1A1D`
+- Primary accent: `#423F91`; dark accent text: `#AAA5F0`
+- Semantic theme tokens for every background, surface, text, border, feedback, and interaction state
+- Spacing scale: `4, 8, 12, 16, 20, 24, 32`; radii: `12, 16, 22`, and fully rounded controls
+- System/SF Pro-style typography with `28–34` large titles and readable `15–17` content
+- Restrained shadows in light mode; tonal borders and surface separation in dark mode
+- Native-feeling stack, tab, sheet, alert, and toast transitions with minimum 44-point touch targets
 
 ## Integration boundaries
 

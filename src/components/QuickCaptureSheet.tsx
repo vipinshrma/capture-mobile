@@ -1,13 +1,14 @@
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from "expo-audio";
 import * as ImagePicker from "expo-image-picker";
-import { ImagePlus } from "lucide-react-native";
+import { ImagePlus, Link2, Mic, StickyNote } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { colors } from "../theme";
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useAppStore } from "../store/AppStore";
+import { getTheme, radius, spacing, type } from "../theme";
 import type { CaptureKind } from "../types";
 import { normalizeWebUrl } from "../utils/capture";
 import { persistSharedFile } from "../utils/files";
-import { PrimaryButton } from "./ui";
+import { PrimaryButton, SheetShell } from "./ui";
 
 type Mode = "note" | "voice" | "photo" | "link";
 type QuickCaptureInput = {
@@ -18,18 +19,20 @@ type QuickCaptureInput = {
   mimeType?: string;
 };
 
-const modes: { id: Mode; label: string }[] = [
-  { id: "note", label: "Write a note" },
-  { id: "voice", label: "Record voice" },
-  { id: "photo", label: "Choose photo" },
-  { id: "link", label: "Paste link" },
-];
+const modes = [
+  { id: "note", label: "Write a note", icon: StickyNote },
+  { id: "voice", label: "Record voice", icon: Mic },
+  { id: "photo", label: "Choose photo", icon: ImagePlus },
+  { id: "link", label: "Paste link", icon: Link2 },
+] satisfies { id: Mode; label: string; icon: typeof StickyNote }[];
 
 export function QuickCaptureSheet({ visible, onClose, onSave }: {
   visible: boolean;
   onClose: () => void;
   onSave: (input: QuickCaptureInput) => void;
 }) {
+  const { dark } = useAppStore();
+  const theme = getTheme(dark);
   const [mode, setMode] = useState<Mode>("note");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -144,18 +147,26 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => void close()}>
-      <Pressable style={styles.scrim} onPress={() => void close()}>
-        <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
-          <View style={styles.handle} />
+      <Pressable style={[styles.scrim, { backgroundColor: theme.scrim }]} onPress={() => void close()}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
+        <Pressable onPress={(event) => event.stopPropagation()}>
+          <SheetShell>
+          <View>
+            <Text style={[styles.eyebrow, { color: theme.textSecondary }]}>Save something</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Quick Capture</Text>
+          </View>
           <View style={styles.types}>
             {modes.map((item) => (
               <Pressable
                 accessibilityRole="button"
+                accessibilityState={{ selected: mode === item.id }}
                 disabled={busy || isRecording}
                 key={item.id}
                 onPress={() => selectMode(item.id)}
+                style={({ pressed }) => [styles.typeCard, { backgroundColor: theme.surfaceRaised, borderColor: mode === item.id ? theme.accent : theme.border }, pressed && styles.pressed]}
               >
-                <Text style={[styles.type, mode === item.id && styles.typeActive]}>{item.label}</Text>
+                <View style={[styles.typeIcon, { backgroundColor: mode === item.id ? theme.accentSoft : theme.surfaceMuted }]}><item.icon size={26} color={mode === item.id ? theme.accentText : theme.textSecondary} /></View>
+                <Text style={[styles.typeLabel, { color: theme.text }]}>{item.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -164,19 +175,19 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
             <TextInput
               autoCapitalize={mode === "link" ? "none" : "sentences"}
               autoCorrect={mode !== "link"}
-              autoFocus
+              autoFocus={false}
               keyboardType={mode === "link" ? "url" : "default"}
               multiline={mode === "note"}
               value={value}
               onChangeText={setValue}
               placeholder={mode === "link" ? "https://example.com" : "What do you want to remember?"}
-              placeholderTextColor={colors.faint}
-              style={[styles.input, mode === "link" && styles.linkInput]}
+              placeholderTextColor={theme.textMuted}
+              style={[styles.input, { backgroundColor: theme.surfaceRaised, borderColor: theme.border, color: theme.text }, mode === "link" && styles.linkInput]}
             />
           ) : mode === "voice" ? (
-            <View style={styles.recording}>
-              <View style={[styles.recordingDot, isRecording && styles.recordingDotActive]} />
-              <Text style={styles.recordingText}>
+            <View style={[styles.recording, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+              <View style={[styles.recordingDot, { backgroundColor: isRecording ? "#E5484D" : theme.textMuted }]} />
+              <Text style={[styles.recordingText, { color: theme.textSecondary }]}>
                 {isRecording ? `Recording ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}` : "Ready to record"}
               </Text>
             </View>
@@ -186,12 +197,12 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
               accessibilityRole="button"
               disabled={busy}
               onPress={() => void choosePhoto()}
-              style={({ pressed }) => [styles.photoPicker, pressed && styles.photoPickerPressed]}
+              style={({ pressed }) => [styles.photoPicker, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }, pressed && styles.pressed]}
             >
-              <View style={styles.photoIcon}><ImagePlus size={28} color={colors.accent} /></View>
+              <View style={[styles.photoIcon, { backgroundColor: theme.accentSoft }]}><ImagePlus size={28} color={theme.accentText} /></View>
               <View style={styles.photoCopy}>
-                <Text style={styles.photoTitle}>{busy ? "Opening Photos…" : "Select from Photos"}</Text>
-                <Text style={styles.photoText}>Choose one image to save securely in Tuck.</Text>
+                <Text style={[styles.photoTitle, { color: theme.accentText }]}>{busy ? "Opening Photos…" : "Select from Photos"}</Text>
+                <Text style={[styles.photoText, { color: theme.textSecondary }]}>Choose one image to save securely in Tuck.</Text>
               </View>
             </Pressable>
           )}
@@ -208,31 +219,34 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
               )}
             </View>}
           </View>
+          </SheetShell>
         </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,.35)" },
-  sheet: { padding: 18, paddingBottom: 34, gap: 14, backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  handle: { alignSelf: "center", width: 36, height: 5, borderRadius: 3, backgroundColor: "#D1D1D6" },
-  types: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  type: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 15, overflow: "hidden", backgroundColor: colors.surface, color: colors.secondary, fontSize: 13 },
-  typeActive: { backgroundColor: colors.accentSoft, color: colors.accent, fontWeight: "600" },
-  input: { minHeight: 96, borderRadius: 14, padding: 13, backgroundColor: "#F5F4F1", color: colors.text, fontSize: 15, textAlignVertical: "top" },
+  scrim: { flex: 1, justifyContent: "flex-end" },
+  keyboard: { flex: 1, justifyContent: "flex-end" },
+  eyebrow: { ...type.meta, marginBottom: 2 },
+  title: { ...type.title },
+  types: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  typeCard: { width: "48%", flexGrow: 1, minHeight: 124, padding: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  typeIcon: { width: 54, height: 54, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  typeLabel: { ...type.label, textAlign: "center" },
+  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+  input: { minHeight: 108, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.md, ...type.body, textAlignVertical: "top" },
   linkInput: { minHeight: 52, textAlignVertical: "center" },
-  recording: { minHeight: 96, borderRadius: 14, backgroundColor: "#F5F4F1", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
-  recordingDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.faint },
-  recordingDotActive: { backgroundColor: "#E5484D" },
-  recordingText: { color: colors.secondary, fontSize: 16, fontWeight: "600" },
-  photoPicker: { minHeight: 108, padding: 16, borderWidth: 1, borderColor: "#DAD7EF", borderRadius: 18, backgroundColor: "#F7F6FC", flexDirection: "row", alignItems: "center", gap: 14 },
-  photoPickerPressed: { opacity: 0.72 },
-  photoIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" },
+  recording: { minHeight: 108, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  recordingDot: { width: 12, height: 12, borderRadius: 6 },
+  recordingText: { ...type.body, fontWeight: "600" },
+  photoPicker: { minHeight: 108, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  photoIcon: { width: 52, height: 52, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
   photoCopy: { flex: 1, gap: 4 },
-  photoTitle: { color: colors.accent, fontSize: 16, fontWeight: "700" },
-  photoText: { color: colors.muted, fontSize: 13.5, lineHeight: 19 },
+  photoTitle: { ...type.cardTitle },
+  photoText: { ...type.meta },
   buttons: { flexDirection: "row", gap: 10 },
   flex: { flex: 1 },
 });

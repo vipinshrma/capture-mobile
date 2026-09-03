@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ToastProvider } from "./src/components/ToastProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { AppStoreProvider, useAppStore } from "./src/store/AppStore";
+import { getTheme } from "./src/theme";
 import type { RootStackParamList } from "./src/types";
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -39,6 +40,7 @@ function processURL(url: string | null) {
 
 function Root() {
   const { captures, dark, hydrated } = useAppStore();
+  const theme = getTheme(dark);
   const response = Notifications.useLastNotificationResponse();
   const handledResponse = useRef<string | undefined>(undefined);
 
@@ -55,7 +57,7 @@ function Root() {
   return (
     <NavigationContainer ref={navigationRef} linking={linking} theme={dark ? DarkTheme : DefaultTheme}>
       <StatusBar style={dark ? "light" : "dark"} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: dark ? "#000000" : "#F3F1ED" }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
         <AppNavigator />
       </SafeAreaView>
     </NavigationContainer>

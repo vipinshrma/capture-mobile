@@ -15,7 +15,7 @@ import { SearchScreen } from "../screens/SearchScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { ShareCaptureScreen } from "../screens/ShareCaptureScreen";
 import { useAppStore } from "../store/AppStore";
-import { colors } from "../theme";
+import { colors, getTheme } from "../theme";
 import type { RootStackParamList, TabParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -23,13 +23,14 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 function MainTabs() {
   const { dark } = useAppStore();
+  const theme = getTheme(dark);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.faint,
-        tabBarStyle: [styles.tabBar, dark && styles.darkTabBar],
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textMuted,
+        tabBarStyle: [styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size }) => {
           const Icon = route.name === "Inbox" ? Inbox : route.name === "Search" ? Search : CheckCircle2;
@@ -46,9 +47,10 @@ function MainTabs() {
 
 export function AppNavigator() {
   const { dark, hydrated, onboarded } = useAppStore();
-  if (!hydrated) return <View style={styles.loader}><ActivityIndicator color={colors.accent} /></View>;
+  const theme = getTheme(dark);
+  if (!hydrated) return <View style={[styles.loader, { backgroundColor: theme.background }]}><ActivityIndicator color={theme.accent} /></View>;
   return (
-    <Stack.Navigator initialRouteName={onboarded ? "Main" : "Onboarding"} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: dark ? colors.darkBackground : colors.background } }}>
+    <Stack.Navigator initialRouteName={onboarded ? "Main" : "Onboarding"} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="EmptyInbox" component={EmptyInboxScreen} />
       <Stack.Screen name="Main" component={MainTabs} />
@@ -64,8 +66,7 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  loader: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  tabBar: { height: 70, paddingTop: 7, paddingBottom: 10, backgroundColor: "rgba(255,255,255,.96)", borderTopColor: colors.separator },
-  darkTabBar: { backgroundColor: colors.darkCard, borderTopColor: "#2C2C2E" },
-  tabLabel: { fontSize: 10 },
+  loader: { flex: 1, alignItems: "center", justifyContent: "center" },
+  tabBar: { height: 74, paddingTop: 8, paddingBottom: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  tabLabel: { fontSize: 11, lineHeight: 14, fontWeight: "600" },
 });

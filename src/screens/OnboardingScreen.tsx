@@ -2,9 +2,9 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FileText, Image, Link2, Search, Share2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { PrimaryButton } from "../components/ui";
+import { BrandMark, PrimaryButton, Screen } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
-import { colors, shadow } from "../theme";
+import { getTheme, radius, shadow, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
@@ -17,44 +17,47 @@ const copy = [
 
 export function OnboardingScreen({ navigation }: Props) {
   const [step, setStep] = useState(0);
-  const { finishOnboarding } = useAppStore();
+  const { dark, finishOnboarding } = useAppStore();
+  const theme = getTheme(dark);
   const finish = () => {
     finishOnboarding();
     navigation.replace("Main", { screen: "Inbox", params: { openQuickCapture: true } });
   };
   return (
-    <View style={styles.screen}>
+    <Screen>
+      <View style={styles.brand}><BrandMark /></View>
       <View style={styles.body}>
-        <View style={styles.art}>
-          {step === 1 ? <Share2 size={60} color={colors.accent} /> : step === 2 ? <Search size={60} color={colors.accent} /> : (
+        <View style={[styles.art, { backgroundColor: theme.accentSoft, borderColor: theme.border }]}>
+          {step === 1 ? <Share2 size={60} color={theme.accentText} /> : step === 2 ? <Search size={60} color={theme.accentText} /> : (
             <View style={styles.cards}>
-              {[Link2, FileText, Image].map((Icon, index) => <View key={index} style={styles.artCard}><Icon size={25} color={index === 1 ? colors.warning : colors.accent} /></View>)}
+              {[Link2, FileText, Image].map((Icon, index) => <View key={index} style={[styles.artCard, { backgroundColor: theme.surface }]}><Icon size={25} color={index === 1 ? theme.warning : theme.accentText} /></View>)}
             </View>
           )}
         </View>
-        <Text style={styles.title}>{copy[step][0]}</Text>
-        <Text style={styles.bodyText}>{copy[step][1]}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{copy[step][0]}</Text>
+        <Text style={[styles.bodyText, { color: theme.textSecondary }]}>{copy[step][1]}</Text>
       </View>
       <View style={styles.footer}>
-        <View style={styles.dots}>{copy.map((_, index) => <View key={index} style={[styles.dot, index === step && styles.activeDot]} />)}</View>
+        <View style={styles.dots}>{copy.map((_, index) => <View key={index} style={[styles.dot, { backgroundColor: index === step ? theme.accent : theme.border }, index === step && styles.activeDot]} />)}</View>
         <PrimaryButton onPress={() => step === 2 ? finish() : setStep(step + 1)}>{step === 2 ? "Start Capturing" : "Continue"}</PrimaryButton>
-        {step === 2 && <Pressable onPress={finish}><Text style={styles.skip}>Skip</Text></Pressable>}
+        {step === 2 && <Pressable accessibilityRole="button" onPress={finish} style={styles.skipButton}><Text style={[styles.skip, { color: theme.textSecondary }]}>Skip</Text></Pressable>}
       </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  body: { flex: 1, alignItems: "center", justifyContent: "center", gap: 22, paddingHorizontal: 28 },
-  art: { width: 220, height: 220, borderRadius: 28, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" },
+  brand: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  body: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.lg, paddingHorizontal: 28 },
+  art: { width: 220, height: 220, borderRadius: 32, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   cards: { flexDirection: "row" },
-  artCard: { width: 55, height: 70, marginHorizontal: -5, borderRadius: 14, backgroundColor: "white", alignItems: "center", justifyContent: "center", ...shadow },
-  title: { color: colors.text, fontSize: 26, lineHeight: 34, fontWeight: "700", textAlign: "center" },
-  bodyText: { color: colors.secondary, fontSize: 15, lineHeight: 22, textAlign: "center" },
-  footer: { padding: 28, gap: 14, alignItems: "center" },
+  artCard: { width: 58, height: 74, marginHorizontal: -5, borderRadius: radius.md, alignItems: "center", justifyContent: "center", ...shadow },
+  title: { ...type.title, maxWidth: 330, textAlign: "center" },
+  bodyText: { ...type.body, maxWidth: 320, textAlign: "center" },
+  footer: { padding: 28, gap: spacing.sm, alignItems: "center" },
   dots: { flexDirection: "row", gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D6D4E8" },
-  activeDot: { backgroundColor: colors.accent },
-  skip: { color: colors.muted, fontSize: 15 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  activeDot: { width: 20 },
+  skipButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: spacing.md },
+  skip: { ...type.body },
 });
