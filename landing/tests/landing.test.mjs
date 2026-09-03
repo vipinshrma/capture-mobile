@@ -11,6 +11,7 @@ const socialImage = readFileSync(new URL("../out/assets/social-preview.png", imp
 const formSource = readFileSync(new URL("../components/WaitlistForm.tsx", import.meta.url), "utf8");
 const motionSource = readFileSync(new URL("../components/RevealMotion.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+const vercelConfig = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
 
 test("metadata uses one production canonical and production sharing URLs", () => {
   assert.equal(html.match(/rel="canonical"/g)?.length, 1);
@@ -18,11 +19,20 @@ test("metadata uses one production canonical and production sharing URLs", () =>
   assert.match(html, new RegExp(`<meta property="og:url" content="${productionUrl}"`));
   assert.match(html, new RegExp(`${productionUrl}assets/social-preview\\.png`));
   assert.doesNotMatch(html, /capture-mobile-git-main-vipinshrmas-projects/);
+  assert.doesNotMatch(html, /capture-mobile-mn5h8y8ti-vipinshrmas-projects/);
   assert.doesNotMatch(html, /social-preview\.svg/);
 
   const structuredData = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/)?.[1];
   assert.ok(structuredData);
   assert.equal(JSON.parse(structuredData).url, productionUrl);
+});
+
+test("malformed links to the retired preview deployment return home", () => {
+  assert.deepEqual(vercelConfig.redirects, [{
+    source: "/:prefix/:host(capture-mobile-mn5h8y8ti-vipinshrmas-projects\\.vercel\\.app)/:path*",
+    destination: "/",
+    permanent: true,
+  }]);
 });
 
 test("robots and sitemap expose only the production homepage", () => {

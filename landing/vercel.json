@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:prefix/:host(capture-mobile-mn5h8y8ti-vipinshrmas-projects\\.vercel\\.app)/:path*",
+      "destination": "/",
+      "permanent": true
+    }
+  ]
+}
