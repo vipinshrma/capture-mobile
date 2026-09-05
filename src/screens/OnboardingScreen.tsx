@@ -1,7 +1,8 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FileText, Image, Link2, Search, Share2 } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrandMark, PrimaryButton, Screen } from "../components/ui";
 import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, shadow, spacing, type } from "../theme";
@@ -19,6 +20,8 @@ export function OnboardingScreen({ navigation }: Props) {
   const [step, setStep] = useState(0);
   const { dark, finishOnboarding } = useAppStore();
   const theme = getTheme(dark);
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom || (Platform.OS === "android" ? 48 : Platform.OS === "ios" ? 34 : 0);
   const finish = () => {
     finishOnboarding();
     navigation.replace("Main", { screen: "Inbox", params: { openQuickCapture: true } });
@@ -37,7 +40,7 @@ export function OnboardingScreen({ navigation }: Props) {
         <Text style={[styles.title, { color: theme.text }]}>{copy[step][0]}</Text>
         <Text style={[styles.bodyText, { color: theme.textSecondary }]}>{copy[step][1]}</Text>
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 28 + bottomInset }]}>
         <View style={styles.dots}>{copy.map((_, index) => <View key={index} style={[styles.dot, { backgroundColor: index === step ? theme.accent : theme.border }, index === step && styles.activeDot]} />)}</View>
         <PrimaryButton onPress={() => step === 2 ? finish() : setStep(step + 1)}>{step === 2 ? "Start Capturing" : "Continue"}</PrimaryButton>
         {step === 2 && <Pressable accessibilityRole="button" onPress={finish} style={styles.skipButton}><Text style={[styles.skip, { color: theme.textSecondary }]}>Skip</Text></Pressable>}

@@ -32,7 +32,7 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
 
   const imageUri = getImageUri(capture);
   const platform = getPlatform(capture.source, capture.title);
-  const sourceUrl = getSourceUrl(capture.source, capture.title);
+  const sourceUrl = getSourceUrl(capture.source, capture.title, capture.body, capture.userNote, capture.metadataTitle, capture.metadataDescription);
   const extractedText = capture.body || capture.metadataDescription;
   const noteChanged = note.trim() !== (capture.userNote || "");
   const reminderLabel = formatReminderLabel(capture.reminderNotificationId ? capture.reminderAt : undefined, new Date(now));
@@ -41,6 +41,11 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
     if (!extractedText) return;
     try { await Clipboard.setStringAsync(extractedText); toast("Copied"); }
     catch (error) { console.error("Failed to copy capture text", error); Alert.alert("Couldn’t copy this text", "Please try again."); }
+  };
+  const openLink = async () => {
+    if (!sourceUrl) return;
+    try { await Linking.openURL(sourceUrl); }
+    catch (error) { console.error("Failed to open capture link", error); Alert.alert("Couldn’t open this link", "Please try again."); }
   };
   const share = async () => {
     try {
@@ -72,12 +77,13 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
           {platform && !logoFailed ? <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /> : null}
           {platform && logoFailed ? <Text style={[styles.platformText, { color: theme.accentText }]}>{platform.label}</Text> : null}
           <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}><Text style={[styles.badgeText, { color: theme.accentText }]}>{capture.category || capture.kind}</Text></View>
-          <Pressable disabled={!sourceUrl} onPress={() => sourceUrl && Linking.openURL(sourceUrl)}><Text numberOfLines={1} style={[styles.meta, { color: sourceUrl ? theme.accentText : theme.textMuted }]}>{capture.metadataSiteName || platform?.name || capture.source} · {formatCaptureTime(capture.capturedAt, capture.createdAt, new Date(now))}</Text></Pressable>
+          <Text numberOfLines={1} style={[styles.meta, { color: theme.textMuted }]}>{capture.metadataSiteName || platform?.name || capture.source} · {formatCaptureTime(capture.capturedAt, capture.createdAt, new Date(now))}</Text>
         </View>
         <Text style={[styles.title, { color: theme.text }]}>{capture.title}</Text>
         {reminderLabel ? <View style={[styles.reminderBadge, { backgroundColor: theme.accentSoft }]}><Clock3 size={15} color={theme.accentText} /><Text style={[styles.badgeText, { color: theme.accentText }]}>{reminderLabel}</Text></View> : null}
 
         {capture.kind === "voice" && capture.localFileUri ? <VoicePlayer uri={capture.localFileUri} dark={dark} /> : imageUri && !imageFailed ? <Image source={{ uri: imageUri }} style={[styles.imagePreview, { backgroundColor: theme.surfaceMuted }]} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} /> : platform && !logoFailed ? <View style={[styles.preview, { backgroundColor: theme.accentSoft }]}><Image source={{ uri: platform.iconUri }} style={styles.previewPlatformLogo} resizeMode="contain" accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /></View> : <View style={[styles.preview, { backgroundColor: theme.accentSoft }]}><View style={[styles.browserBar, { backgroundColor: theme.surface }]} /><View style={[styles.line, { backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "58%", backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "75%", backgroundColor: theme.accent }]} /></View>}
+        {sourceUrl ? <PrimaryButton secondary onPress={() => void openLink()}>Open Link</PrimaryButton> : null}
 
         <View style={[styles.extracted, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.extractedHeader}><Text style={[styles.extractedTitle, { color: theme.text }]}>Saved text</Text>{extractedText ? <Pressable accessibilityLabel="Copy saved text" onPress={copyText} style={styles.copy}><Copy size={16} color={theme.accentText} /><Text style={[styles.accentText, { color: theme.accentText }]}>Copy</Text></Pressable> : null}</View>

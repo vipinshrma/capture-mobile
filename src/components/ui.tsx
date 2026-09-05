@@ -110,7 +110,7 @@ export function SheetShell({ children, style }: { children: ReactNode; style?: V
   const { dark } = useAppStore();
   const theme = getTheme(dark);
   const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? spacing.xl : 0);
+  const bottomInset = insets.bottom || (Platform.OS === "android" ? 48 : Platform.OS === "ios" ? 34 : 0);
   return <View style={[styles.sheet, { paddingBottom: spacing.lg + bottomInset, backgroundColor: theme.surface, borderColor: theme.border }, style]}><View style={[styles.handle, { backgroundColor: theme.border }]} />{children}</View>;
 }
 

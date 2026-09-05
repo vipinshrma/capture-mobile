@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { isAttachmentSizeAllowed, mapSharedPayload } from "../src/utils/sharePayload.ts";
 import { matchesSearchFilters } from "../src/utils/searchFilters.ts";
 import { formatReminderLabel, getReminderDate, mergeReminderDate } from "../src/utils/reminders.ts";
-import { formatCaptureTime, getPlatform, normalizeWebUrl, parseLinkMetadata } from "../src/utils/capture.ts";
+import { formatCaptureTime, getPlatform, getSourceUrl, normalizeWebUrl, parseLinkMetadata } from "../src/utils/capture.ts";
 
 test("maps incoming payloads to capture kinds", () => {
   assert.equal(mapSharedPayload({ shareType: "url", value: "https://example.com" }).kind, "link");
@@ -54,6 +54,11 @@ test("combines custom reminder date and time selections", () => {
 test("normalizes quick-capture web links", () => {
   assert.equal(normalizeWebUrl("example.com/article"), "https://example.com/article");
   assert.throws(() => normalizeWebUrl("not a link"));
+});
+
+test("finds the first safe web link across capture fields", () => {
+  assert.equal(getSourceUrl("Note", "Read https://example.com/article). later"), "https://example.com/article");
+  assert.equal(getSourceUrl("javascript:alert(1)", "No web link"), undefined);
 });
 
 test("formats capture timestamps relative to the current time", () => {

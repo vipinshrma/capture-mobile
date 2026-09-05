@@ -3,8 +3,7 @@ import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { ToastProvider } from "./src/components/ToastProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { AppStoreProvider, useAppStore } from "./src/store/AppStore";
@@ -57,7 +56,7 @@ function Root() {
   return (
     <NavigationContainer ref={navigationRef} linking={linking} theme={dark ? DarkTheme : DefaultTheme}>
       <StatusBar style={dark ? "light" : "dark"} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "bottom"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
         <AppNavigator />
       </SafeAreaView>
     </NavigationContainer>

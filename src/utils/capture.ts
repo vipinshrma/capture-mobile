@@ -49,9 +49,16 @@ export function inferCaptureKind(kind: CaptureKind, source?: string) {
   return source && IMAGE_URL_PATTERN.test(source.trim()) ? "image" : kind;
 }
 
-export function getSourceUrl(source?: string, fallback?: string) {
-  const value = (source || fallback?.match(/https?:\/\/\S+/i)?.[0])?.trim().replace(/[\])},.!?;]+$/, "");
-  return value && /^https?:\/\//i.test(value) ? value : undefined;
+export function getSourceUrl(...values: (string | undefined)[]) {
+  for (const text of values) {
+    const value = text?.match(/https?:\/\/\S+/i)?.[0].replace(/[\])},.!?;]+$/, "");
+    if (!value) continue;
+    try {
+      const url = new URL(value);
+      if (/^https?:$/.test(url.protocol) && url.hostname) return value;
+    } catch { /* Try the next capture field. */ }
+  }
+  return undefined;
 }
 
 export function normalizeWebUrl(value: string) {
