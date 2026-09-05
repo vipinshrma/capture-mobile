@@ -1,8 +1,8 @@
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from "expo-audio";
 import * as ImagePicker from "expo-image-picker";
 import { ImagePlus, Link2, Mic, Pause, Play, StickyNote } from "lucide-react-native";
-import { useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRef, useState } from "react";
+import { Alert, Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, spacing, type } from "../theme";
 import type { CaptureKind } from "../types";
@@ -39,11 +39,15 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState<PendingPhoto>();
   const [recordingUri, setRecordingUri] = useState<string>();
+  const formScroll = useRef<ScrollView>(null);
+  const inputFocused = useRef(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder, 250);
   const previewPlayer = useAudioPlayer(recordingUri || null, { updateInterval: 250 });
   const previewStatus = useAudioPlayerStatus(previewPlayer);
   const isRecording = recorderState.isRecording || recorder.isRecording;
+  const isTextMode = mode === "note" || mode === "link";
+  const revealInput = () => formScroll.current?.scrollToEnd({ animated: true });
 
   const reset = () => {
     setMode("note");
@@ -171,16 +175,15 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
     setRecordingUri(undefined);
   };
 
-  const isTextMode = mode === "note" || mode === "link";
   const duration = Math.floor(recorderState.durationMillis / 1000);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => void close()}>
       <Pressable style={[styles.scrim, { backgroundColor: theme.scrim }]} onPress={() => void close()}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
+        <KeyboardAvoidingView behavior="padding" style={styles.keyboard}>
         <Pressable onPress={(event) => event.stopPropagation()}>
           <SheetShell style={styles.captureSheet}>
-          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView ref={formScroll} onLayout={() => inputFocused.current && revealInput()} style={styles.formScroll} contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
           <View>
             <Text style={[styles.eyebrow, { color: theme.textSecondary }]}>Save something</Text>
             <Text style={[styles.title, { color: theme.text }]}>Quick Capture</Text>
@@ -208,6 +211,8 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
               autoFocus={false}
               keyboardType={mode === "link" ? "url" : "default"}
               multiline={mode === "note"}
+              onBlur={() => { inputFocused.current = false; }}
+              onFocus={() => { inputFocused.current = true; revealInput(); }}
               value={value}
               onChangeText={setValue}
               placeholder={mode === "link" ? "https://example.com" : "What do you want to remember?"}
