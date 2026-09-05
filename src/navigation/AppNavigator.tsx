@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, Inbox, Search } from "lucide-react-native";
 import { ArchiveScreen } from "../screens/ArchiveScreen";
 import { CaptureDetailScreen } from "../screens/CaptureDetailScreen";
@@ -15,7 +16,7 @@ import { SearchScreen } from "../screens/SearchScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { ShareCaptureScreen } from "../screens/ShareCaptureScreen";
 import { useAppStore } from "../store/AppStore";
-import { colors, getTheme } from "../theme";
+import { getTheme } from "../theme";
 import type { RootStackParamList, TabParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,13 +25,20 @@ const Tab = createBottomTabNavigator<TabParamList>();
 function MainTabs() {
   const { dark } = useAppStore();
   const theme = getTheme(dark);
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? 24 : 0);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.textMuted,
-        tabBarStyle: [styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }],
+        tabBarStyle: [styles.tabBar, {
+          height: 62 + bottomInset,
+          paddingBottom: Math.max(bottomInset, 8),
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+        }],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size }) => {
           const Icon = route.name === "Inbox" ? Inbox : route.name === "Search" ? Search : CheckCircle2;
@@ -67,6 +75,6 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: "center", justifyContent: "center" },
-  tabBar: { height: 74, paddingTop: 8, paddingBottom: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  tabBar: { paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
   tabLabel: { fontSize: 11, lineHeight: 14, fontWeight: "600" },
 });

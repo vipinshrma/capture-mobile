@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { isAttachmentSizeAllowed, mapSharedPayload } from "../src/utils/sharePayload.ts";
 import { matchesSearchFilters } from "../src/utils/searchFilters.ts";
-import { formatReminderLabel, getReminderDate } from "../src/utils/reminders.ts";
+import { formatReminderLabel, getReminderDate, mergeReminderDate } from "../src/utils/reminders.ts";
 import { formatCaptureTime, getPlatform, normalizeWebUrl, parseLinkMetadata } from "../src/utils/capture.ts";
 
 test("maps incoming payloads to capture kinds", () => {
@@ -39,6 +39,16 @@ test("creates local 9am reminder dates", () => {
   assert.equal(getReminderDate("next-week", now).getTime(), new Date("2026-09-05T09:00:00").getTime());
   assert.match(formatReminderLabel("2026-08-30T09:00:00", now), /^Reminded: Tomorrow, /);
   assert.equal(formatReminderLabel("2026-08-29T19:00:00", now), "Reminder due");
+});
+
+test("combines custom reminder date and time selections", () => {
+  const current = new Date(2026, 8, 5, 10, 15);
+  const withDate = mergeReminderDate(current, new Date(2026, 8, 12, 0, 0), "date");
+  const withTime = mergeReminderDate(withDate, new Date(2026, 8, 5, 18, 45), "time");
+  assert.deepEqual(
+    [withTime.getFullYear(), withTime.getMonth(), withTime.getDate(), withTime.getHours(), withTime.getMinutes(), withTime.getSeconds()],
+    [2026, 8, 12, 18, 45, 0],
+  );
 });
 
 test("normalizes quick-capture web links", () => {

@@ -12,7 +12,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Favourites">;
 export function FavouritesScreen({ navigation }: Props) {
   const { captures, dark } = useAppStore();
   const theme = getTheme(dark);
-  const favourites = captures.filter((item) => item.favourite && !item.archived);
+  const favourites = captures.filter((item) => item.favourite);
   return (
     <Screen>
       <BackHeader onBack={navigation.goBack} />

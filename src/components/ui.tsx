@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { ArrowLeft, Search, Settings2, type LucideIcon } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, shadow, spacing, type } from "../theme";
 
@@ -105,10 +106,12 @@ export function FilterChip({ label, selected = false, icon: Icon, onPress }: { l
   );
 }
 
-export function SheetShell({ children }: { children: ReactNode }) {
+export function SheetShell({ children, style }: { children: ReactNode; style?: ViewStyle | ViewStyle[] }) {
   const { dark } = useAppStore();
   const theme = getTheme(dark);
-  return <View style={[styles.sheet, { backgroundColor: theme.surface, borderColor: theme.border }]}><View style={[styles.handle, { backgroundColor: theme.border }]} />{children}</View>;
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? spacing.xl : 0);
+  return <View style={[styles.sheet, { paddingBottom: spacing.lg + bottomInset, backgroundColor: theme.surface, borderColor: theme.border }, style]}><View style={[styles.handle, { backgroundColor: theme.border }]} />{children}</View>;
 }
 
 export function EmptyState({ icon: Icon, title, message, action }: { icon: LucideIcon; title: string; message: string; action?: ReactNode }) {
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
   section: { ...type.label, marginBottom: spacing.xs },
   chip: { minHeight: 42, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   chipText: { ...type.label },
-  sheet: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl, gap: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  sheet: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   handle: { alignSelf: "center", width: 40, height: 5, borderRadius: radius.full, marginBottom: spacing.xs },
   empty: { paddingHorizontal: spacing.xl, alignItems: "center", justifyContent: "center", gap: spacing.sm },
   emptyIcon: { width: 68, height: 68, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },

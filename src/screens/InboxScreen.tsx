@@ -1,6 +1,6 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
-import { FileText, Image as ImageIcon, Inbox as InboxIcon, Link2, Plus, StickyNote } from "lucide-react-native";
+import { FileText, Image as ImageIcon, Inbox as InboxIcon, Link2, Mic, Plus, StickyNote } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CaptureCard } from "../components/CaptureCard";
@@ -11,8 +11,9 @@ import { useAppStore } from "../store/AppStore";
 import { getTheme, spacing } from "../theme";
 import type { RootStackParamList, TabParamList } from "../types";
 
-const filters = ["All", "Links", "Images", "Notes", "Documents"] as const;
-const filterIcons = { All: InboxIcon, Links: Link2, Images: ImageIcon, Notes: StickyNote, Documents: FileText };
+const filters = ["All", "Links", "Images", "Notes", "Documents", "Audio"] as const;
+const filterIcons = { All: InboxIcon, Links: Link2, Images: ImageIcon, Notes: StickyNote, Documents: FileText, Audio: Mic };
+const filterForKind = { link: "Links", image: "Images", note: "Notes", document: "Documents", voice: "Audio", task: "All" } as const;
 
 export function InboxScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -30,6 +31,7 @@ export function InboxScreen() {
       Images: "image",
       Notes: "note",
       Documents: "document",
+      Audio: "voice",
     }[filter] === item.kind;
   }), [captures, filter]);
 
@@ -54,7 +56,7 @@ export function InboxScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
       <Pressable accessibilityLabel="Quick capture" accessibilityRole="button" onPress={() => setQuickOpen(true)} style={({ pressed }) => [styles.fab, { backgroundColor: theme.accent, shadowColor: theme.shadow }, pressed && styles.pressed]}><Plus size={27} color={theme.onAccent} /></Pressable>
-      <QuickCaptureSheet visible={quickOpen} onClose={() => setQuickOpen(false)} onSave={(input) => { addCapture(input); setQuickOpen(false); toast("Added to Inbox"); }} />
+      <QuickCaptureSheet visible={quickOpen} onClose={() => setQuickOpen(false)} onSave={(input) => { addCapture(input); setFilter(filterForKind[input.kind || "note"]); setQuickOpen(false); toast("Added to Inbox"); }} />
     </Screen>
   );
 }

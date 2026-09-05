@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useIncomingShare } from "expo-sharing";
 import { FileText, Image as ImageIcon, Mic } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { PrimaryButton, SectionLabel, SheetShell } from "../components/ui";
 import { useToast } from "../components/ToastProvider";
 import { useAppStore } from "../store/AppStore";
@@ -67,25 +67,33 @@ export function ShareCaptureScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.scrim }]}>
-      <SheetShell>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" onPress={close} style={styles.headerAction}><Text style={[styles.cancel, { color: theme.textSecondary }]}>Cancel</Text></Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>Save to Tuck</Text><View style={styles.headerAction} />
-        </View>
-        <View style={[styles.preview, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-          <View style={[styles.thumb, { backgroundColor: theme.accentSoft }]}>{previewUri ? <Image source={{ uri: previewUri }} style={styles.previewImage} /> : <Icon color={theme.accentText} />}</View>
-          <View style={styles.previewCopy}><SectionLabel>{shared ? `Shared ${shared.shareType}` : "Screenshot"}</SectionLabel><Text numberOfLines={2} style={[styles.previewTitle, { color: theme.text }]}>{mapped?.title || "Captured from Safari"}</Text></View>
-        </View>
-        {(mappingError || attachment && error) && <Text style={[styles.error, { color: theme.danger }]}>{mappingError || "This item couldn’t be read. Try sharing it again."}</Text>}
-        <TextInput multiline value={note} onChangeText={setNote} placeholder="Add a thought…" placeholderTextColor={theme.textMuted} style={[styles.input, { backgroundColor: theme.surfaceRaised, borderColor: theme.border, color: theme.text }]} />
-        <PrimaryButton disabled={saving || unavailable || Boolean(mappingError || attachment && error)} onPress={save}>{saving ? "Saving…" : attachment && isResolving ? "Preparing…" : "Save to Inbox"}</PrimaryButton>
-      </SheetShell>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
+        <SheetShell style={styles.sheet}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={styles.form} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <View style={styles.header}>
+              <Pressable accessibilityRole="button" onPress={close} style={styles.headerAction}><Text style={[styles.cancel, { color: theme.textSecondary }]}>Cancel</Text></Pressable>
+              <Text style={[styles.title, { color: theme.text }]}>Save to Tuck</Text><View style={styles.headerAction} />
+            </View>
+            <View style={[styles.preview, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+              <View style={[styles.thumb, { backgroundColor: theme.accentSoft }]}>{previewUri ? <Image source={{ uri: previewUri }} style={styles.previewImage} /> : <Icon color={theme.accentText} />}</View>
+              <View style={styles.previewCopy}><SectionLabel>{shared ? `Shared ${shared.shareType}` : "Screenshot"}</SectionLabel><Text numberOfLines={2} style={[styles.previewTitle, { color: theme.text }]}>{mapped?.title || "Captured from Safari"}</Text></View>
+            </View>
+            {(mappingError || attachment && error) && <Text style={[styles.error, { color: theme.danger }]}>{mappingError || "This item couldn’t be read. Try sharing it again."}</Text>}
+            <TextInput multiline value={note} onChangeText={setNote} placeholder="Add a thought…" placeholderTextColor={theme.textMuted} style={[styles.input, { backgroundColor: theme.surfaceRaised, borderColor: theme.border, color: theme.text }]} />
+          </ScrollView>
+          <PrimaryButton disabled={saving || unavailable || Boolean(mappingError || attachment && error)} onPress={save}>{saving ? "Saving…" : attachment && isResolving ? "Preparing…" : "Save to Inbox"}</PrimaryButton>
+        </SheetShell>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, justifyContent: "flex-end" },
+  keyboard: { flex: 1, justifyContent: "flex-end" },
+  sheet: { maxHeight: "92%" },
+  formScroll: { flexShrink: 1 },
+  form: { gap: spacing.md },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerAction: { width: 72, minHeight: 44, justifyContent: "center" },
   cancel: { ...type.body },

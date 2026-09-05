@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.capture.inbox",
+      "softwareKeyboardLayoutMode": "resize",
       "allowBackup": false,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW"
@@ -51,7 +52,8 @@
           "microphonePermission": "Allow Tuck to record voice notes."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

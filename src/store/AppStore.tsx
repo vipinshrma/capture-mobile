@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { SQLiteDatabase } from "expo-sqlite";
 import * as Notifications from "expo-notifications";
 import { clearSharedPayloads } from "expo-sharing";
-import { seedCaptures } from "../data/captures";
 import type { Capture, CaptureKind } from "../types";
 import { fetchLinkMetadata, getPlatform, getSourceUrl, inferCaptureKind } from "../utils/capture";
 import { deleteAllLocalFiles, deleteLocalFile } from "../utils/files";
@@ -34,7 +33,7 @@ type AppStore = PersistedState & {
 const initial: PersistedState = {
   onboarded: false,
   dark: false,
-  captures: seedCaptures,
+  captures: [],
   reviewIndex: 0,
 };
 

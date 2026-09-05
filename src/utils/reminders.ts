@@ -7,6 +7,13 @@ export function getReminderDate(choice: ReminderChoice, now = new Date()) {
   return date;
 }
 
+export function mergeReminderDate(current: Date, selected: Date, part: "date" | "time") {
+  const next = new Date(current);
+  if (part === "date") next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+  else next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+  return next;
+}
+
 export function formatReminderLabel(reminderAt?: string, now = new Date()) {
   if (!reminderAt) return undefined;
   const reminder = new Date(reminderAt);

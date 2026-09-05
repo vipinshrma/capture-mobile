@@ -1,8 +1,8 @@
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from "expo-audio";
+import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from "expo-audio";
 import * as ImagePicker from "expo-image-picker";
-import { ImagePlus, Link2, Mic, StickyNote } from "lucide-react-native";
+import { ImagePlus, Link2, Mic, Pause, Play, StickyNote } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, spacing, type } from "../theme";
 import type { CaptureKind } from "../types";
@@ -18,6 +18,7 @@ type QuickCaptureInput = {
   localFileUri?: string;
   mimeType?: string;
 };
+type PendingPhoto = { uri: string; fileName: string; fileSize?: number; mimeType: string };
 
 const modes = [
   { id: "note", label: "Write a note", icon: StickyNote },
@@ -36,13 +37,19 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
   const [mode, setMode] = useState<Mode>("note");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [photo, setPhoto] = useState<PendingPhoto>();
+  const [recordingUri, setRecordingUri] = useState<string>();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder, 250);
+  const previewPlayer = useAudioPlayer(recordingUri || null, { updateInterval: 250 });
+  const previewStatus = useAudioPlayerStatus(previewPlayer);
   const isRecording = recorderState.isRecording || recorder.isRecording;
 
   const reset = () => {
     setMode("note");
     setValue("");
+    setPhoto(undefined);
+    setRecordingUri(undefined);
     setBusy(false);
   };
 
@@ -51,6 +58,7 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
       await recorder.stop().catch(() => undefined);
       await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
     }
+    previewPlayer.pause();
     reset();
     onClose();
   };
@@ -71,13 +79,7 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
       });
       if (result.canceled) return;
       const asset = result.assets[0];
-      const localFileUri = persistSharedFile(asset.uri, asset.fileName || "photo.jpg", asset.fileSize);
-      complete({
-        title: asset.fileName || "Photo",
-        kind: "image",
-        localFileUri,
-        mimeType: asset.mimeType || "image/jpeg",
-      });
+      setPhoto({ uri: asset.uri, fileName: asset.fileName || "Photo", fileSize: asset.fileSize, mimeType: asset.mimeType || "image/jpeg" });
     } catch (error) {
       Alert.alert("Couldn’t save photo", error instanceof Error ? error.message : "The selected photo was not added. Please try again.");
     } finally {
@@ -112,14 +114,38 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
     try {
       await recorder.stop();
       if (!recorder.uri) throw new Error("Recording has no file");
-      const localFileUri = persistSharedFile(recorder.uri, `voice-${Date.now()}.m4a`);
-      complete({ title: "Voice note", kind: "voice", localFileUri, mimeType: "audio/mp4" });
+      setRecordingUri(recorder.uri);
     } catch (error) {
       Alert.alert("Couldn’t save recording", error instanceof Error ? error.message : "Your recording was not added. Please try again.");
     } finally {
       await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       setBusy(false);
     }
+  };
+
+  const savePhoto = () => {
+    if (!photo) { void choosePhoto(); return; }
+    try {
+      complete({ title: photo.fileName, kind: "image", localFileUri: persistSharedFile(photo.uri, photo.fileName, photo.fileSize), mimeType: photo.mimeType });
+    } catch (error) {
+      Alert.alert("Couldn’t save photo", error instanceof Error ? error.message : "Please try again.");
+    }
+  };
+
+  const saveRecording = () => {
+    if (!recordingUri) { void startRecording(); return; }
+    try {
+      previewPlayer.pause();
+      complete({ title: "Voice note", kind: "voice", localFileUri: persistSharedFile(recordingUri, `voice-${Date.now()}.m4a`), mimeType: "audio/mp4" });
+    } catch (error) {
+      Alert.alert("Couldn’t save recording", error instanceof Error ? error.message : "Please try again.");
+    }
+  };
+
+  const togglePreview = async () => {
+    if (previewStatus.playing) { previewPlayer.pause(); return; }
+    if (previewStatus.duration && previewStatus.currentTime >= previewStatus.duration - 0.1) await previewPlayer.seekTo(0);
+    previewPlayer.play();
   };
 
   const saveText = () => {
@@ -138,8 +164,11 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
 
   const selectMode = (nextMode: Mode) => {
     if (busy || isRecording) return;
+    previewPlayer.pause();
     setMode(nextMode);
     setValue("");
+    setPhoto(undefined);
+    setRecordingUri(undefined);
   };
 
   const isTextMode = mode === "note" || mode === "link";
@@ -150,7 +179,8 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
       <Pressable style={[styles.scrim, { backgroundColor: theme.scrim }]} onPress={() => void close()}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
         <Pressable onPress={(event) => event.stopPropagation()}>
-          <SheetShell>
+          <SheetShell style={styles.captureSheet}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View>
             <Text style={[styles.eyebrow, { color: theme.textSecondary }]}>Save something</Text>
             <Text style={[styles.title, { color: theme.text }]}>Quick Capture</Text>
@@ -184,13 +214,23 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
               placeholderTextColor={theme.textMuted}
               style={[styles.input, { backgroundColor: theme.surfaceRaised, borderColor: theme.border, color: theme.text }, mode === "link" && styles.linkInput]}
             />
-          ) : mode === "voice" ? (
+          ) : mode === "voice" ? recordingUri ? (
+            <Pressable accessibilityLabel={previewStatus.playing ? "Pause audio preview" : "Play audio preview"} accessibilityRole="button" onPress={() => void togglePreview()} style={[styles.mediaPreview, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+              <View style={[styles.previewControl, { backgroundColor: theme.accent }]}>{previewStatus.playing ? <Pause size={22} color={theme.onAccent} fill={theme.onAccent} /> : <Play size={22} color={theme.onAccent} fill={theme.onAccent} />}</View>
+              <View style={styles.previewCopy}><Text style={[styles.photoTitle, { color: theme.text }]}>Audio preview</Text><Text style={[styles.photoText, { color: theme.textSecondary }]}>Tap to {previewStatus.playing ? "pause" : "listen"} before saving.</Text></View>
+            </Pressable>
+          ) : (
             <View style={[styles.recording, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
               <View style={[styles.recordingDot, { backgroundColor: isRecording ? "#E5484D" : theme.textMuted }]} />
               <Text style={[styles.recordingText, { color: theme.textSecondary }]}>
                 {isRecording ? `Recording ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}` : "Ready to record"}
               </Text>
             </View>
+          ) : photo ? (
+            <Pressable accessibilityLabel="Choose a different photo" accessibilityRole="button" disabled={busy} onPress={() => void choosePhoto()} style={[styles.imagePreview, { borderColor: theme.border }]}>
+              <Image source={{ uri: photo.uri }} style={styles.previewImage} resizeMode="cover" accessibilityLabel={photo.fileName} />
+              <View style={[styles.changePhoto, { backgroundColor: theme.surfaceRaised }]}><Text style={[styles.changePhotoText, { color: theme.accentText }]}>Change</Text></View>
+            </Pressable>
           ) : (
             <Pressable
               accessibilityLabel="Choose a photo from your library"
@@ -206,18 +246,21 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
               </View>
             </Pressable>
           )}
+          </ScrollView>
 
           <View style={styles.buttons}>
             <View style={styles.flex}><PrimaryButton secondary disabled={busy} onPress={() => void close()}>Cancel</PrimaryButton></View>
-            {mode !== "photo" && <View style={styles.flex}>
-              {mode === "voice" ? (
-                <PrimaryButton disabled={busy} onPress={() => void (isRecording ? stopRecording() : startRecording())}>
-                  {isRecording ? "Stop & Save" : "Start Recording"}
+            <View style={styles.flex}>
+              {mode === "photo" ? (
+                <PrimaryButton disabled={busy} onPress={savePhoto}>{busy ? "Opening Photos…" : photo ? "Save Image" : "Choose Image"}</PrimaryButton>
+              ) : mode === "voice" ? (
+                <PrimaryButton disabled={busy} onPress={() => void (isRecording ? stopRecording() : saveRecording())}>
+                  {isRecording ? "Stop & Preview" : recordingUri ? "Save Audio" : "Start Recording"}
                 </PrimaryButton>
               ) : (
                 <PrimaryButton disabled={busy || !value.trim()} onPress={saveText}>Save</PrimaryButton>
               )}
-            </View>}
+            </View>
           </View>
           </SheetShell>
         </Pressable>
@@ -230,6 +273,9 @@ export function QuickCaptureSheet({ visible, onClose, onSave }: {
 const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: "flex-end" },
   keyboard: { flex: 1, justifyContent: "flex-end" },
+  captureSheet: { maxHeight: "92%" },
+  formScroll: { flexShrink: 1 },
+  formContent: { gap: spacing.md },
   eyebrow: { ...type.meta, marginBottom: 2 },
   title: { ...type.title },
   types: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
@@ -247,6 +293,13 @@ const styles = StyleSheet.create({
   photoCopy: { flex: 1, gap: 4 },
   photoTitle: { ...type.cardTitle },
   photoText: { ...type.meta },
+  imagePreview: { height: 190, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden" },
+  previewImage: { width: "100%", height: "100%" },
+  changePhoto: { position: "absolute", right: spacing.sm, bottom: spacing.sm, minHeight: 36, paddingHorizontal: spacing.sm, borderRadius: radius.full, alignItems: "center", justifyContent: "center" },
+  changePhotoText: { ...type.label },
+  mediaPreview: { minHeight: 108, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  previewControl: { width: 48, height: 48, borderRadius: radius.full, alignItems: "center", justifyContent: "center" },
+  previewCopy: { flex: 1, gap: 4 },
   buttons: { flexDirection: "row", gap: 10 },
   flex: { flex: 1 },
 });

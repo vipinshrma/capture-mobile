@@ -1,5 +1,6 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
 import { Archive, CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, FileText, Image as ImageIcon, Link2, Mic, StickyNote, type LucideIcon } from "lucide-react-native";
 import { useState } from "react";
@@ -10,7 +11,7 @@ import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, shadow, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
 import { formatCaptureTime, getImageUri } from "../utils/capture";
-import { getReminderDate, type ReminderChoice } from "../utils/reminders";
+import { getReminderDate, mergeReminderDate, type ReminderChoice } from "../utils/reminders";
 
 const kindIcons = { link: Link2, image: ImageIcon, note: StickyNote, document: FileText, task: CheckCircle2, voice: Mic };
 
@@ -20,26 +21,60 @@ export function ReviewScreen() {
   const theme = getTheme(dark);
   const toast = useToast();
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customDate, setCustomDate] = useState(() => new Date(Date.now() + 60 * 60_000));
+  const [pickerMode, setPickerMode] = useState<"date" | "time">();
   const dueReminder = captures.find((item) => !item.archived && item.reminderNotificationId && item.reminderAt && new Date(item.reminderAt).getTime() <= now);
   const queue = captures.filter((item) => !item.archived && !item.reminderAt);
   const item = dueReminder || queue[reviewIndex];
 
-  const scheduleReminder = async (choice: ReminderChoice) => {
+  const scheduleReminderAt = async (reminderDate: Date, successMessage: string) => {
     if (!item) return;
+    if (reminderDate.getTime() <= Date.now() + 30_000) { Alert.alert("Choose a future time", "The reminder must be scheduled in the future."); return; }
     try {
       let permissions = await Notifications.getPermissionsAsync();
       if (permissions.status !== "granted") permissions = await Notifications.requestPermissionsAsync();
       if (permissions.status !== "granted") { Alert.alert("Notifications are off", "Allow notifications in Settings to create reminders."); return; }
       if (Platform.OS === "android") await Notifications.setNotificationChannelAsync("reminders", { name: "Capture reminders", importance: Notifications.AndroidImportance.DEFAULT });
-      const reminderDate = getReminderDate(choice);
       const reminderNotificationId = await Notifications.scheduleNotificationAsync({
         content: { title: "Tuck reminder", body: "You have a capture to review.", data: { captureId: item.id } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate, ...(Platform.OS === "android" ? { channelId: "reminders" } : {}) },
       });
       setCaptureReminder(item.id, reminderNotificationId, reminderDate.toISOString());
       setReminderOpen(false);
-      toast(choice === "tomorrow" ? "Reminder set for tomorrow" : "Reminder set for next week");
+      toast(successMessage);
     } catch (error) { console.error("Failed to schedule capture reminder", error); Alert.alert("Couldn’t set reminder", "Please try again."); }
+  };
+
+  const scheduleReminder = (choice: ReminderChoice) => {
+    void scheduleReminderAt(getReminderDate(choice), choice === "tomorrow" ? "Reminder set for tomorrow" : "Reminder set for next week");
+  };
+
+  const chooseCustomDate = () => {
+    setCustomOpen(true);
+    if (Platform.OS === "android") setPickerMode("date");
+  };
+
+  const changeCustomDate = (event: DateTimePickerEvent, selected?: Date) => {
+    const mode = pickerMode;
+    if (Platform.OS === "android") setPickerMode(undefined);
+    if (event.type !== "set" || !selected) return;
+    if (Platform.OS === "ios") { setCustomDate(selected); return; }
+    if (mode === "date") {
+      setCustomDate(mergeReminderDate(customDate, selected, "date"));
+      setTimeout(() => setPickerMode("time"), 0);
+    } else {
+      setCustomDate(mergeReminderDate(customDate, selected, "time"));
+    }
+  };
+
+  const openReminder = () => {
+    const date = new Date(Date.now() + 60 * 60_000);
+    date.setSeconds(0, 0);
+    setCustomDate(date);
+    setCustomOpen(false);
+    setPickerMode(undefined);
+    setReminderOpen(true);
   };
 
   if (!item) {
@@ -74,25 +109,35 @@ export function ReviewScreen() {
         <View style={styles.actions}>
           <Action icon={CheckCircle2} label="Keep" active onPress={() => { if (item.reminderAt) clearCaptureReminder(item.id); advanceReview(); }} />
           <Action icon={Archive} label="Archive" onPress={() => { archiveCapture(item.id); toast("Archived"); }} />
-          <Action icon={Clock3} label="Remind" outlined onPress={() => setReminderOpen(true)} />
+          <Action icon={Clock3} label="Remind" outlined onPress={openReminder} />
           <Action icon={ChevronRight} label="Open" onPress={() => navigation.navigate("CaptureDetail", { id: item.id, returnTo: "Review" })} />
         </View>
       </ScrollView>
       <Modal visible={reminderOpen} transparent animationType="slide" onRequestClose={() => setReminderOpen(false)}>
         <Pressable style={[styles.scrim, { backgroundColor: theme.scrim }]} onPress={() => setReminderOpen(false)}>
           <Pressable onPress={(event) => event.stopPropagation()}>
-            <SheetShell>
+            <SheetShell style={styles.reminderSheet}>
+              <ScrollView contentContainerStyle={styles.reminderContent} showsVerticalScrollIndicator={false}>
               <Text style={[styles.sheetTitle, { color: theme.text }]}>Remind me</Text>
               <Text style={[styles.sheetCopy, { color: theme.textSecondary }]}>Choose when Tuck should bring this capture back.</Text>
-              <ReminderRow label="Tomorrow at 9:00 AM" onPress={() => void scheduleReminder("tomorrow")} />
-              <ReminderRow label="Next week at 9:00 AM" onPress={() => void scheduleReminder("next-week")} />
+              <ReminderRow label="Tomorrow at 9:00 AM" onPress={() => scheduleReminder("tomorrow")} />
+              <ReminderRow label="Next week at 9:00 AM" onPress={() => scheduleReminder("next-week")} />
+              <ReminderRow label={customOpen ? formatCustomDate(customDate) : "Choose custom date & time"} onPress={chooseCustomDate} />
+              {customOpen && Platform.OS === "ios" ? <DateTimePicker value={customDate} mode="datetime" display="spinner" minimumDate={new Date()} onChange={changeCustomDate} /> : null}
+              {customOpen ? <PrimaryButton onPress={() => void scheduleReminderAt(customDate, "Custom reminder set")}>Set Custom Reminder</PrimaryButton> : null}
               <PrimaryButton secondary onPress={() => setReminderOpen(false)}>Cancel</PrimaryButton>
+              </ScrollView>
             </SheetShell>
           </Pressable>
         </Pressable>
       </Modal>
+      {pickerMode ? <DateTimePicker value={customDate} mode={pickerMode} minimumDate={pickerMode === "date" ? new Date() : undefined} onChange={changeCustomDate} /> : null}
     </Screen>
   );
+}
+
+function formatCustomDate(date: Date) {
+  return date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function Action({ icon: Icon, label, onPress, active = false, outlined = false }: { icon: LucideIcon; label: string; onPress: () => void; active?: boolean; outlined?: boolean }) {
@@ -129,6 +174,8 @@ const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: "flex-end" },
   sheetTitle: { ...type.title },
   sheetCopy: { ...type.body, marginTop: -8 },
+  reminderSheet: { maxHeight: "92%" },
+  reminderContent: { gap: spacing.md },
   reminderRow: { minHeight: 58, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.sm },
   reminderText: { ...type.body, flex: 1, fontWeight: "600" },
 });
