@@ -57,7 +57,7 @@ function Root() {
   return (
     <NavigationContainer ref={navigationRef} linking={linking} theme={dark ? DarkTheme : DefaultTheme}>
       <StatusBar style={dark ? "light" : "dark"} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["top", "bottom"]}>
         <AppNavigator />
       </SafeAreaView>
     </NavigationContainer>

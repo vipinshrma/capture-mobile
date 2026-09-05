@@ -3,7 +3,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import * as Clipboard from "expo-clipboard";
 import { shareAsync } from "expo-sharing";
 import { useEffect, useState } from "react";
-import { Alert, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { Archive, Clock3, Copy, Heart, Pause, Play, Share2, Trash2, type LucideIcon } from "lucide-react-native";
 import { useAppStore } from "../store/AppStore";
 import { useToast } from "../components/ToastProvider";
@@ -65,7 +65,8 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <BackHeader onBack={back} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
         <Text style={[styles.screenTitle, { color: theme.text }]}>Capture Detail</Text>
         <View style={styles.metaRow}>
           {platform && !logoFailed ? <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /> : null}
@@ -96,6 +97,7 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
           <DetailAction icon={Trash2} label="Delete" danger onPress={remove} />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
@@ -136,6 +138,7 @@ function formatTime(seconds: number) {
 }
 
 const styles = StyleSheet.create({
+  keyboard: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { paddingHorizontal: spacing.md, paddingBottom: 48, gap: spacing.md },
   screenTitle: { ...type.display },
