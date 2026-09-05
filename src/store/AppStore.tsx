@@ -21,6 +21,8 @@ type AppStore = PersistedState & {
     mimeType?: string;
   }) => void;
   updateCaptureNote: (id: string, userNote: string) => void;
+  updateCaptureTitle: (id: string, title: string) => void;
+  updateCaptureBody: (id: string, body: string) => void;
   setCaptureReminder: (id: string, reminderNotificationId: string, reminderAt: string) => void;
   clearCaptureReminder: (id: string) => void;
   toggleFavourite: (id: string) => void;
@@ -103,6 +105,18 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     updateCaptureNote: (id, userNote) => setState((current) => ({
       ...current,
       captures: current.captures.map((item) => item.id === id ? { ...item, userNote: userNote.trim() || undefined } : item),
+    })),
+    updateCaptureTitle: (id, title) => {
+      const nextTitle = title.trim().slice(0, 300);
+      if (!nextTitle) return;
+      setState((current) => ({
+        ...current,
+        captures: current.captures.map((item) => item.id === id ? { ...item, title: nextTitle } : item),
+      }));
+    },
+    updateCaptureBody: (id, body) => setState((current) => ({
+      ...current,
+      captures: current.captures.map((item) => item.id === id ? { ...item, body: body.trim() ? body.trim().slice(0, 50_000) : undefined } : item),
     })),
     setCaptureReminder: (id, reminderNotificationId, reminderAt) => setState((current) => ({
       ...current,

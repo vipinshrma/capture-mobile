@@ -1,4 +1,5 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { ChevronRight, Search, X } from "lucide-react-native";
 import { useState } from "react";
@@ -13,6 +14,7 @@ export function SearchScreen() {
   const { dark } = useAppStore();
   const theme = getTheme(dark);
   const [query, setQuery] = useState("");
+  const tabBarHeight = useBottomTabBarHeight();
   const search = (value = query) => value.trim() && navigation.navigate("SearchResults", { query: value.trim() });
   return (
     <Screen>
@@ -23,7 +25,7 @@ export function SearchScreen() {
           <TextInput accessibilityLabel="Search captures" returnKeyType="search" value={query} onChangeText={setQuery} onSubmitEditing={() => search()} placeholder="Search everything" placeholderTextColor={theme.textMuted} style={[styles.input, { color: theme.text }]} />
           {!!query && <Pressable accessibilityLabel="Clear search" onPress={() => setQuery("")} style={styles.clear}><X size={18} color={theme.textMuted} /></Pressable>}
         </View>
-        <ScrollView contentContainerStyle={styles.content} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + 24 }]} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
           <SectionLabel>Try a search</SectionLabel>
           {["offline-first", "product research", "review"].map((item) => (
             <Pressable key={item} onPress={() => search(item)} style={[styles.row, { borderBottomColor: theme.border }]}><Search size={17} color={theme.textMuted} /><Text style={[styles.rowText, { color: theme.text }]}>{item}</Text><ChevronRight size={17} color={theme.textMuted} /></Pressable>

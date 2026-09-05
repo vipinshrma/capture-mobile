@@ -1,4 +1,5 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import * as Notifications from "expo-notifications";
@@ -24,6 +25,7 @@ export function ReviewScreen() {
   const [customOpen, setCustomOpen] = useState(false);
   const [customDate, setCustomDate] = useState(() => new Date(Date.now() + 60 * 60_000));
   const [pickerMode, setPickerMode] = useState<"date" | "time">();
+  const tabBarHeight = useBottomTabBarHeight();
   const dueReminder = captures.find((item) => !item.archived && item.reminderNotificationId && item.reminderAt && new Date(item.reminderAt).getTime() <= now);
   const queue = captures.filter((item) => !item.archived && !item.reminderAt);
   const item = dueReminder || queue[reviewIndex];
@@ -98,7 +100,7 @@ export function ReviewScreen() {
         <Text style={[styles.meta, { color: theme.textMuted }]}>{dueReminder ? "Reminder due" : `${reviewIndex + 1} of ${queue.length}`}</Text>
         <View style={[styles.track, { backgroundColor: theme.border }]}><View style={[styles.fill, { width: dueReminder ? "100%" : `${((reviewIndex + 1) / queue.length) * 100}%`, backgroundColor: theme.accent }]} /></View>
       </View>
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: tabBarHeight + 24 }]} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={[styles.visual, { backgroundColor: theme.accentSoft }]}>{imageUri ? <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" /> : <ItemIcon size={48} color={theme.accentText} />}</View>
           <View style={[styles.kindBadge, { backgroundColor: theme.accentSoft }]}><ItemIcon size={14} color={theme.accentText} /><Text style={[styles.kicker, { color: theme.accentText }]}>{item.kind}</Text></View>

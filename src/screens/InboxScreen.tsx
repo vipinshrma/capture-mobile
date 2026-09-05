@@ -1,4 +1,5 @@
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { FileText, Image as ImageIcon, Inbox as InboxIcon, Link2, Mic, Plus, StickyNote } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -23,6 +24,7 @@ export function InboxScreen() {
   const toast = useToast();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [quickOpen, setQuickOpen] = useState(Boolean(route.params?.openQuickCapture));
+  const tabBarHeight = useBottomTabBarHeight();
   const visible = useMemo(() => captures.filter((item) => {
     if (item.archived) return false;
     if (filter === "All") return true;
@@ -44,7 +46,7 @@ export function InboxScreen() {
           <FilterChip key={item} label={item} icon={filterIcons[item]} selected={filter === item} onPress={() => setFilter(item)} />
         ))}
       </ScrollView>
-      <ScrollView contentContainerStyle={[styles.list, !visible.length && styles.emptyList]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + 24 }, !visible.length && styles.emptyList]} showsVerticalScrollIndicator={false}>
         {visible.length ? (
           <>
             <SectionLabel>{filter === "All" ? "Recently saved" : filter}</SectionLabel>
@@ -53,9 +55,8 @@ export function InboxScreen() {
         ) : (
           <EmptyState icon={InboxIcon} title={filter === "All" ? "Your inbox is ready" : `No ${filter.toLowerCase()} yet`} message="Tap the plus button to save something without organizing it first." />
         )}
-        <View style={{ height: 100 }} />
       </ScrollView>
-      <Pressable accessibilityLabel="Quick capture" accessibilityRole="button" onPress={() => setQuickOpen(true)} style={({ pressed }) => [styles.fab, { backgroundColor: theme.accent, shadowColor: theme.shadow }, pressed && styles.pressed]}><Plus size={27} color={theme.onAccent} /></Pressable>
+      <Pressable accessibilityLabel="Quick capture" accessibilityRole="button" onPress={() => setQuickOpen(true)} style={({ pressed }) => [styles.fab, { bottom: tabBarHeight + 16, backgroundColor: theme.accent, shadowColor: theme.shadow }, pressed && styles.pressed]}><Plus size={27} color={theme.onAccent} /></Pressable>
       <QuickCaptureSheet visible={quickOpen} onClose={() => setQuickOpen(false)} onSave={(input) => { addCapture(input); setFilter(filterForKind[input.kind || "note"]); setQuickOpen(false); toast("Added to Inbox"); }} />
     </Screen>
   );
@@ -66,6 +67,6 @@ const styles = StyleSheet.create({
   filters: { gap: 8, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   list: { padding: spacing.md, gap: spacing.md },
   emptyList: { flexGrow: 1, justifyContent: "center" },
-  fab: { position: "absolute", right: 18, bottom: 20, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.24, shadowRadius: 18, elevation: 7 },
+  fab: { position: "absolute", right: 18, width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.24, shadowRadius: 18, elevation: 7 },
   pressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
 });

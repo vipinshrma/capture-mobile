@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { ArrowLeft, Search, Settings2, type LucideIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppStore } from "../store/AppStore";
@@ -110,7 +110,7 @@ export function SheetShell({ children, style }: { children: ReactNode; style?: V
   const { dark } = useAppStore();
   const theme = getTheme(dark);
   const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom || (Platform.OS === "android" ? 48 : Platform.OS === "ios" ? 34 : 0);
+  const bottomInset = insets.bottom;
   return <View style={[styles.sheet, { paddingBottom: spacing.lg + bottomInset, backgroundColor: theme.surface, borderColor: theme.border }, style]}><View style={[styles.handle, { backgroundColor: theme.border }]} />{children}</View>;
 }
 

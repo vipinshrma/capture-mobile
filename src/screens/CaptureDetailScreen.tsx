@@ -4,10 +4,10 @@ import * as Clipboard from "expo-clipboard";
 import { shareAsync } from "expo-sharing";
 import { useEffect, useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
-import { Archive, Clock3, Copy, Heart, Pause, Play, Share2, Trash2, type LucideIcon } from "lucide-react-native";
+import { Archive, Check, Clock3, Copy, ExternalLink, FileText, Heart, Pause, Pencil, Play, Share2, StickyNote, Trash2, X, type LucideIcon } from "lucide-react-native";
 import { useAppStore } from "../store/AppStore";
 import { useToast } from "../components/ToastProvider";
-import { BackHeader, PrimaryButton, Screen, SectionLabel } from "../components/ui";
+import { BackHeader, PrimaryButton, Screen } from "../components/ui";
 import { getTheme, radius, shadow, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
 import { formatCaptureTime, getImageUri, getPlatform, getSourceUrl } from "../utils/capture";
@@ -16,7 +16,7 @@ import { formatReminderLabel } from "../utils/reminders";
 type Props = NativeStackScreenProps<RootStackParamList, "CaptureDetail">;
 
 export function CaptureDetailScreen({ navigation, route }: Props) {
-  const { captures, dark, now, toggleFavourite, archiveCapture, deleteCapture, updateCaptureNote } = useAppStore();
+  const { captures, dark, now, toggleFavourite, archiveCapture, deleteCapture, updateCaptureNote, updateCaptureTitle, updateCaptureBody } = useAppStore();
   const theme = getTheme(dark);
   const toast = useToast();
   const id = route.params?.id || captures[0]?.id;
@@ -25,8 +25,19 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
   const [logoFailed, setLogoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [note, setNote] = useState(capture?.userNote || "");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(capture?.title || "");
+  const [editingBody, setEditingBody] = useState(false);
+  const [bodyDraft, setBodyDraft] = useState(capture?.body || capture?.metadataDescription || "");
+  const [noteFocused, setNoteFocused] = useState(false);
 
   useEffect(() => setNote(capture?.userNote || ""), [capture?.id, capture?.userNote]);
+  useEffect(() => {
+    if (!editingTitle) setTitleDraft(capture?.title || "");
+  }, [capture?.id, capture?.title, editingTitle]);
+  useEffect(() => {
+    if (!editingBody) setBodyDraft(capture?.body || capture?.metadataDescription || "");
+  }, [capture?.id, capture?.body, capture?.metadataDescription, editingBody]);
 
   if (!capture) return <Screen><View style={styles.center}><Text style={{ color: theme.text }}>This capture no longer exists.</Text></View></Screen>;
 
@@ -34,13 +45,40 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
   const platform = getPlatform(capture.source, capture.title);
   const sourceUrl = getSourceUrl(capture.source, capture.title, capture.body, capture.userNote, capture.metadataTitle, capture.metadataDescription);
   const extractedText = capture.body || capture.metadataDescription;
+  const siteName = capture.metadataSiteName || platform?.name || capture.source || "Saved capture";
+  const timeLabel = formatCaptureTime(capture.capturedAt, capture.createdAt, new Date(now));
+  const wordCount = extractedText ? extractedText.trim().split(/\s+/).filter(Boolean).length : 0;
   const noteChanged = note.trim() !== (capture.userNote || "");
+  const titleChanged = titleDraft.trim() !== (capture.title || "") && titleDraft.trim().length > 0;
+  const bodyChanged = bodyDraft.trim() !== (extractedText || "");
   const reminderLabel = formatReminderLabel(capture.reminderNotificationId ? capture.reminderAt : undefined, new Date(now));
+
   const saveNote = () => { updateCaptureNote(capture.id, note); toast("Note saved"); };
+  const discardNote = () => setNote(capture.userNote || "");
+  const saveTitle = () => {
+    const next = titleDraft.trim();
+    if (!next) {
+      Alert.alert("Give this capture a title", "A title helps you find it later in search.");
+      return;
+    }
+    updateCaptureTitle(capture.id, next);
+    setEditingTitle(false);
+    toast("Title renamed");
+  };
+  const saveBody = () => {
+    updateCaptureBody(capture.id, bodyDraft);
+    setEditingBody(false);
+    toast(bodyDraft.trim() ? "Saved text updated" : "Saved text cleared");
+  };
   const copyText = async () => {
     if (!extractedText) return;
     try { await Clipboard.setStringAsync(extractedText); toast("Copied"); }
     catch (error) { console.error("Failed to copy capture text", error); Alert.alert("Couldn’t copy this text", "Please try again."); }
+  };
+  const copyLink = async () => {
+    if (!sourceUrl) return;
+    try { await Clipboard.setStringAsync(sourceUrl); toast("Link copied"); }
+    catch (error) { console.error("Failed to copy capture link", error); Alert.alert("Couldn’t copy this link", "Please try again."); }
   };
   const openLink = async () => {
     if (!sourceUrl) return;
@@ -69,34 +107,174 @@ export function CaptureDetailScreen({ navigation, route }: Props) {
 
   return (
     <Screen>
-      <BackHeader onBack={back} />
+      <BackHeader onBack={back} title="Details" />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboard}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
-        <Text style={[styles.screenTitle, { color: theme.text }]}>Capture Detail</Text>
-        <View style={styles.metaRow}>
-          {platform && !logoFailed ? <Image source={{ uri: platform.iconUri }} style={styles.platformLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /> : null}
-          {platform && logoFailed ? <Text style={[styles.platformText, { color: theme.accentText }]}>{platform.label}</Text> : null}
-          <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}><Text style={[styles.badgeText, { color: theme.accentText }]}>{capture.category || capture.kind}</Text></View>
-          <Text numberOfLines={1} style={[styles.meta, { color: theme.textMuted }]}>{capture.metadataSiteName || platform?.name || capture.source} · {formatCaptureTime(capture.capturedAt, capture.createdAt, new Date(now))}</Text>
+        <View style={[styles.sourceRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={[styles.sourceAvatar, { backgroundColor: theme.accentSoft }]}>
+            {platform && !logoFailed
+              ? <Image source={{ uri: platform.iconUri }} style={styles.sourceLogo} accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} />
+              : <Text style={[styles.sourceFallback, { color: theme.accentText }]}>{platform?.label || siteName.slice(0, 2).toUpperCase()}</Text>}
+          </View>
+          <View style={styles.sourceCopy}>
+            <Text numberOfLines={1} style={[styles.sourceName, { color: theme.text }]}>{siteName}</Text>
+            <Text numberOfLines={1} style={[styles.sourceMeta, { color: theme.textMuted }]}>{timeLabel}</Text>
+          </View>
+          <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}>
+            <Text style={[styles.badgeText, { color: theme.accentText }]}>{capture.category || capture.kind}</Text>
+          </View>
         </View>
-        <Text style={[styles.title, { color: theme.text }]}>{capture.title}</Text>
+
+        <View style={styles.titleBlock}>
+          {editingTitle ? (
+            <View style={[styles.editorCard, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
+              <TextInput
+                accessibilityLabel="Capture title"
+                autoFocus
+                value={titleDraft}
+                onChangeText={setTitleDraft}
+                placeholder="Name this capture…"
+                placeholderTextColor={theme.textMuted}
+                maxLength={300}
+                multiline
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={saveTitle}
+                style={[styles.titleInput, { color: theme.text }]}
+              />
+              <View style={styles.editorActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Cancel renaming" onPress={() => { setTitleDraft(capture.title); setEditingTitle(false); }} style={({ pressed }) => [styles.ghostButton, pressed && styles.pressed]}>
+                  <X size={16} color={theme.textSecondary} /><Text style={[styles.ghostText, { color: theme.textSecondary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Save title" disabled={!titleChanged} onPress={saveTitle} style={({ pressed }) => [styles.savePill, { backgroundColor: theme.accent }, !titleChanged && styles.disabled, pressed && styles.pressed]}>
+                  <Check size={16} color={theme.onAccent} /><Text style={[styles.savePillText, { color: theme.onAccent }]}>Save</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { color: theme.text }]}>{capture.title}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Rename capture" onPress={() => setEditingTitle(true)} style={({ pressed }) => [styles.renameButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
+                <Pencil size={17} color={theme.accentText} />
+              </Pressable>
+            </View>
+          )}
+          <Text style={[styles.titleHint, { color: theme.textMuted }]}>{editingTitle ? "Give it a name you’ll recognise in search." : "Tap the pencil to rename this capture."}</Text>
+        </View>
+
+        {sourceUrl ? (
+          <View style={[styles.linkCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Pressable accessibilityRole="link" accessibilityLabel={`Open ${sourceUrl}`} accessibilityHint="Opens in your browser. Long-press to copy." onPress={() => void openLink()} onLongPress={() => void copyLink()} style={({ pressed }) => [styles.linkPress, pressed && styles.pressed]}>
+              <Text numberOfLines={2} ellipsizeMode="tail" style={[styles.linkText, { color: theme.accentText }]}>{sourceUrl}</Text>
+              <Text style={[styles.linkHint, { color: theme.textMuted }]}>Tap to open · long-press to copy</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open link in browser" onPress={() => void openLink()} style={({ pressed }) => [styles.openPill, { backgroundColor: theme.accent }, pressed && styles.pressed]}>
+              <ExternalLink size={15} color={theme.onAccent} />
+              <Text style={[styles.openPillText, { color: theme.onAccent }]}>Open</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {reminderLabel ? <View style={[styles.reminderBadge, { backgroundColor: theme.accentSoft }]}><Clock3 size={15} color={theme.accentText} /><Text style={[styles.badgeText, { color: theme.accentText }]}>{reminderLabel}</Text></View> : null}
 
-        {capture.kind === "voice" && capture.localFileUri ? <VoicePlayer uri={capture.localFileUri} dark={dark} /> : imageUri && !imageFailed ? <Image source={{ uri: imageUri }} style={[styles.imagePreview, { backgroundColor: theme.surfaceMuted }]} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} /> : platform && !logoFailed ? <View style={[styles.preview, { backgroundColor: theme.accentSoft }]}><Image source={{ uri: platform.iconUri }} style={styles.previewPlatformLogo} resizeMode="contain" accessibilityLabel={`${platform.name} logo`} onError={() => setLogoFailed(true)} /></View> : <View style={[styles.preview, { backgroundColor: theme.accentSoft }]}><View style={[styles.browserBar, { backgroundColor: theme.surface }]} /><View style={[styles.line, { backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "58%", backgroundColor: theme.accent }]} /><View style={[styles.line, { width: "75%", backgroundColor: theme.accent }]} /></View>}
-        {sourceUrl ? <PrimaryButton secondary onPress={() => void openLink()}>Open Link</PrimaryButton> : null}
+        {capture.kind === "voice" && capture.localFileUri ? <VoicePlayer uri={capture.localFileUri} dark={dark} /> : imageUri && !imageFailed ? <Image source={{ uri: imageUri }} style={[styles.imagePreview, { backgroundColor: theme.surfaceMuted }]} resizeMode="cover" accessibilityLabel={capture.title} onError={() => setImageFailed(true)} /> : null}
 
-        <View style={[styles.extracted, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={styles.extractedHeader}><Text style={[styles.extractedTitle, { color: theme.text }]}>Saved text</Text>{extractedText ? <Pressable accessibilityLabel="Copy saved text" onPress={copyText} style={styles.copy}><Copy size={16} color={theme.accentText} /><Text style={[styles.accentText, { color: theme.accentText }]}>Copy</Text></Pressable> : null}</View>
-          <Text style={[styles.body, { color: theme.textSecondary }]}>{extractedText || "No saved text is available for this capture."}</Text>
+        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}><FileText size={18} color={theme.accentText} /></View>
+            <View style={styles.cardHeading}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Saved text</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>{extractedText ? `${wordCount} word${wordCount === 1 ? "" : "s"} · from this capture` : "Nothing saved yet"}</Text>
+            </View>
+            {extractedText && !editingBody ? (
+              <Pressable accessibilityLabel="Copy saved text" accessibilityRole="button" onPress={copyText} style={({ pressed }) => [styles.iconGhost, { borderColor: theme.border }, pressed && styles.pressed]}>
+                <Copy size={16} color={theme.accentText} />
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={editingBody ? "Done editing saved text" : extractedText ? "Edit saved text" : "Add saved text"}
+              onPress={() => editingBody ? saveBody() : setEditingBody(true)}
+              style={({ pressed }) => [styles.iconGhost, { borderColor: theme.border, backgroundColor: editingBody ? theme.accent : "transparent" }, pressed && styles.pressed]}
+            >
+              {editingBody ? <Check size={16} color={theme.onAccent} /> : <Pencil size={16} color={theme.accentText} />}
+            </Pressable>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          {editingBody ? (
+            <View style={styles.cardBody}>
+              <TextInput
+                accessibilityLabel="Edit saved text"
+                autoFocus
+                multiline
+                value={bodyDraft}
+                onChangeText={setBodyDraft}
+                placeholder="Paste or type the text you want to keep…"
+                placeholderTextColor={theme.textMuted}
+                maxLength={50_000}
+                style={[styles.bodyInput, { color: theme.text }]}
+                textAlignVertical="top"
+              />
+              <Text style={[styles.helper, { color: theme.textMuted }]}>Edits stay on this capture and remain searchable offline.</Text>
+              <View style={styles.editorActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Discard saved text changes" onPress={() => { setBodyDraft(extractedText || ""); setEditingBody(false); }} style={({ pressed }) => [styles.ghostButton, pressed && styles.pressed]}>
+                  <X size={16} color={theme.textSecondary} /><Text style={[styles.ghostText, { color: theme.textSecondary }]}>Discard</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Save edited text" disabled={!bodyChanged} onPress={saveBody} style={({ pressed }) => [styles.savePill, { backgroundColor: theme.accent }, !bodyChanged && styles.disabled, pressed && styles.pressed]}>
+                  <Check size={16} color={theme.onAccent} /><Text style={[styles.savePillText, { color: theme.onAccent }]}>Save text</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : extractedText ? (
+            <View style={styles.cardBody}>
+              <Text selectable style={[styles.body, { color: theme.textSecondary }]}>{extractedText}</Text>
+            </View>
+          ) : (
+            <View style={styles.cardBody}>
+              <Text style={[styles.emptyBody, { color: theme.textMuted }]}>No saved text yet. Add the key quote, summary, or content you want to find later.</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Add saved text" onPress={() => setEditingBody(true)} style={({ pressed }) => [styles.addButton, { backgroundColor: theme.accentSoft }, pressed && styles.pressed]}>
+                <Pencil size={15} color={theme.accentText} /><Text style={[styles.addButtonText, { color: theme.accentText }]}>Add text</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
-        <View style={styles.noteSection}>
-          <SectionLabel>Your note</SectionLabel>
-          <TextInput accessibilityLabel="Capture note" multiline value={note} onChangeText={setNote} placeholder="Add a note…" placeholderTextColor={theme.textMuted} style={[styles.input, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]} />
-          <PrimaryButton disabled={!noteChanged} onPress={saveNote}>Save Note</PrimaryButton>
+        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, { backgroundColor: theme.accentSoft }]}><StickyNote size={18} color={theme.accentText} /></View>
+            <View style={styles.cardHeading}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Your note</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>Private to you · searchable offline</Text>
+            </View>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={styles.cardBody}>
+            <TextInput
+              accessibilityLabel="Capture note"
+              multiline
+              value={note}
+              onChangeText={setNote}
+              onFocus={() => setNoteFocused(true)}
+              onBlur={() => setNoteFocused(false)}
+              placeholder="Add context, a follow-up, or why this matters…"
+              placeholderTextColor={theme.textMuted}
+              maxLength={10_000}
+              style={[styles.noteInput, { backgroundColor: theme.surfaceMuted, borderColor: noteFocused ? theme.accent : theme.border, color: theme.text }]}
+              textAlignVertical="top"
+            />
+            {noteChanged ? (
+              <View style={styles.editorActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Discard note changes" onPress={discardNote} style={({ pressed }) => [styles.ghostButton, pressed && styles.pressed]}>
+                  <X size={16} color={theme.textSecondary} /><Text style={[styles.ghostText, { color: theme.textSecondary }]}>Discard</Text>
+                </Pressable>
+                <View style={styles.saveFlex}><PrimaryButton onPress={saveNote}>Save Note</PrimaryButton></View>
+              </View>
+            ) : (
+              <Text style={[styles.helper, { color: theme.textMuted }]}>{capture.userNote ? "Notes sync to search instantly." : "Notes never leave this device."}</Text>
+            )}
+          </View>
         </View>
 
-        <View style={styles.actions}>
+        <View style={[styles.actionsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <DetailAction icon={Share2} label="Share" onPress={() => void share()} />
           <DetailAction icon={Heart} label="Favourite" active={Boolean(capture.favourite)} onPress={() => { toggleFavourite(capture.id); toast(capture.favourite ? "Removed from Favourites" : "Added to Favourites"); }} />
           <DetailAction icon={Archive} label="Archive" onPress={archive} />
@@ -112,7 +290,7 @@ function DetailAction({ icon: Icon, label, onPress, active = false, danger = fal
   const { dark } = useAppStore();
   const theme = getTheme(dark);
   const color = danger ? theme.danger : active ? theme.accentText : theme.text;
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.detailAction, pressed && styles.pressed]}><View style={[styles.actionCircle, { backgroundColor: active ? theme.accentSoft : theme.surface, borderColor: danger ? theme.danger : theme.border }]}><Icon size={22} color={color} fill={active ? color : "transparent"} /></View><Text numberOfLines={1} style={[styles.actionLabel, { color }]}>{label}</Text></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.detailAction, pressed && styles.pressed]}><View style={[styles.actionCircle, { backgroundColor: active ? theme.accentSoft : theme.surfaceMuted, borderColor: danger ? theme.danger : theme.border }]}><Icon size={22} color={color} fill={active ? color : "transparent"} /></View><Text numberOfLines={1} style={[styles.actionLabel, { color }]}>{label}</Text></Pressable>;
 }
 
 function VoicePlayer({ uri, dark }: { uri: string; dark: boolean }) {
@@ -147,20 +325,30 @@ const styles = StyleSheet.create({
   keyboard: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   content: { paddingHorizontal: spacing.md, paddingBottom: 48, gap: spacing.md },
-  screenTitle: { ...type.display },
-  metaRow: { minHeight: 28, flexDirection: "row", alignItems: "center", gap: 7 },
-  platformLogo: { width: 22, height: 22, borderRadius: 5 },
-  platformText: { minWidth: 22, fontSize: 12, fontWeight: "800", textAlign: "center" },
-  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
+  sourceRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.sm, paddingRight: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, ...shadow },
+  sourceAvatar: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  sourceLogo: { width: 28, height: 28, borderRadius: 7 },
+  sourceFallback: { fontSize: 15, fontWeight: "800" },
+  sourceCopy: { flex: 1, minWidth: 0, gap: 1 },
+  sourceName: { ...type.label },
+  sourceMeta: { ...type.meta },
+  badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.full },
   badgeText: { ...type.meta, fontWeight: "700", textTransform: "capitalize" },
   reminderBadge: { alignSelf: "flex-start", minHeight: 30, paddingHorizontal: 10, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 6 },
-  meta: { ...type.meta, maxWidth: 230 },
-  title: { ...type.title },
-  preview: { height: 210, borderRadius: radius.lg, justifyContent: "center", padding: 28, gap: spacing.sm, ...shadow },
+  titleBlock: { gap: 6 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  title: { flex: 1, fontSize: 24, lineHeight: 30, fontWeight: "800", letterSpacing: -0.5 },
+  renameButton: { width: 44, height: 44, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  titleHint: { ...type.meta },
+  editorCard: { borderRadius: radius.md, borderWidth: 1.5, padding: spacing.sm, gap: spacing.sm },
+  titleInput: { fontSize: 20, lineHeight: 26, fontWeight: "700", minHeight: 52, textAlignVertical: "top" },
+  linkCard: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.sm, paddingLeft: spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  linkPress: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: "center", gap: 2 },
+  linkText: { ...type.body },
+  linkHint: { ...type.meta },
+  openPill: { minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 6 },
+  openPillText: { ...type.label },
   imagePreview: { height: 280, borderRadius: radius.lg, ...shadow },
-  previewPlatformLogo: { width: 88, height: 88, borderRadius: radius.md, alignSelf: "center" },
-  browserBar: { height: 24, borderRadius: 8, opacity: 0.82 },
-  line: { width: "86%", height: 7, borderRadius: radius.full, opacity: 0.25 },
   voicePlayer: { minHeight: 150, padding: spacing.lg, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.md, ...shadow },
   playButton: { width: 62, height: 62, borderRadius: 31, alignItems: "center", justifyContent: "center" },
   voiceProgress: { flex: 1, gap: spacing.xs },
@@ -169,17 +357,31 @@ const styles = StyleSheet.create({
   progressFill: { height: "100%", borderRadius: radius.full },
   timeRow: { flexDirection: "row", justifyContent: "space-between" },
   time: { ...type.meta },
-  extracted: { padding: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, gap: spacing.xs },
-  extractedHeader: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  extractedTitle: { ...type.cardTitle },
+  card: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden", ...shadow },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, minHeight: 64 },
+  cardIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  cardHeading: { flex: 1, minWidth: 0, gap: 1 },
+  cardTitle: { ...type.cardTitle },
+  cardSubtitle: { ...type.meta },
+  iconGhost: { width: 44, height: 44, borderRadius: radius.full, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  divider: { height: StyleSheet.hairlineWidth },
+  cardBody: { padding: spacing.md, gap: spacing.sm },
   body: { ...type.body },
-  copy: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: spacing.md },
-  accentText: { ...type.label },
-  noteSection: { gap: spacing.sm },
-  input: { minHeight: 130, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.md, ...type.body, textAlignVertical: "top" },
-  actions: { flexDirection: "row", justifyContent: "space-between", gap: spacing.xs, marginTop: spacing.xs },
-  detailAction: { flex: 1, minWidth: 0, alignItems: "center", gap: spacing.xs },
-  actionCircle: { width: 58, height: 58, borderRadius: 29, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  bodyInput: { ...type.body, minHeight: 160, textAlignVertical: "top" },
+  emptyBody: { ...type.body },
+  addButton: { alignSelf: "flex-start", minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 6 },
+  addButtonText: { ...type.label },
+  noteInput: { minHeight: 110, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, padding: spacing.md, ...type.body },
+  helper: { ...type.meta },
+  editorActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  ghostButton: { minHeight: 44, paddingHorizontal: spacing.sm, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 6 },
+  ghostText: { ...type.label },
+  savePill: { minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 6 },
+  savePillText: { ...type.label },
+  saveFlex: { flex: 1 },
+  actionsCard: { flexDirection: "row", justifyContent: "space-between", gap: spacing.xs, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, paddingVertical: spacing.sm, paddingHorizontal: spacing.xs, ...shadow },
+  detailAction: { flex: 1, minWidth: 0, alignItems: "center", gap: spacing.xs, paddingVertical: 4 },
+  actionCircle: { width: 56, height: 56, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   actionLabel: { fontSize: 11.5, lineHeight: 16, fontWeight: "600" },
   pressed: { opacity: 0.68, transform: [{ scale: 0.97 }] },
   disabled: { opacity: 0.42 },

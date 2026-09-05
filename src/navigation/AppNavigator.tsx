@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle2, Inbox, Search } from "lucide-react-native";
 import { ArchiveScreen } from "../screens/ArchiveScreen";
@@ -26,14 +26,15 @@ function MainTabs() {
   const { dark } = useAppStore();
   const theme = getTheme(dark);
   const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom || (Platform.OS === "android" ? 48 : Platform.OS === "ios" ? 34 : 0);
+  const bottomInset = insets.bottom;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.textMuted,
-        tabBarStyle: [styles.tabBar, { height: 52 + bottomInset, paddingBottom: bottomInset, backgroundColor: theme.surface, borderTopColor: theme.border }],
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: [styles.tabBar, { height: 60 + bottomInset, paddingBottom: bottomInset, backgroundColor: theme.surface, borderTopColor: theme.border }],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size }) => {
           const Icon = route.name === "Inbox" ? Inbox : route.name === "Search" ? Search : CheckCircle2;
