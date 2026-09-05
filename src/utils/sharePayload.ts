@@ -1,5 +1,6 @@
 import type { ResolvedSharePayload, SharePayload } from "expo-sharing";
 import type { CaptureKind } from "../types";
+import { getSourceUrl } from "./capture.ts";
 
 export const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 export const isAttachmentSizeAllowed = (size: number) => size <= MAX_ATTACHMENT_BYTES;
@@ -14,7 +15,8 @@ export type SharedCaptureInput = {
 
 export function mapSharedPayload(payload: SharePayload | ResolvedSharePayload): SharedCaptureInput {
   if (["text", "url"].includes(payload.shareType) && payload.value.length > 1_000_000) throw new Error("Shared text exceeds the 1 MB limit");
-  if (payload.shareType === "url") return { kind: "link", title: payload.value, source: payload.value };
+  const sharedUrl = getSourceUrl(undefined, payload.value);
+  if (payload.shareType === "url" || sharedUrl) return { kind: "link", title: sharedUrl || payload.value, source: sharedUrl || payload.value };
   if (payload.shareType === "text") return { kind: "note", title: payload.value };
 
   const resolved = payload as ResolvedSharePayload;

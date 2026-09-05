@@ -16,6 +16,7 @@ export type Capture = {
   userNote?: string;
   mimeType?: string;
   reminderNotificationId?: string;
+  reminderAt?: string;
   createdAt: string;
   favourite?: boolean;
   archived?: boolean;

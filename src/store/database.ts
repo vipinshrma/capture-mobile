@@ -25,6 +25,7 @@ type CaptureRow = {
   user_note: string | null;
   mime_type: string | null;
   reminder_notification_id: string | null;
+  reminder_at: string | null;
   created_at: string;
   favourite: number;
   archived: number;
@@ -53,6 +54,7 @@ export async function initializeDatabase(fallback: PersistedState) {
       user_note TEXT,
       mime_type TEXT,
       reminder_notification_id TEXT,
+      reminder_at TEXT,
       created_at TEXT NOT NULL,
       favourite INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
@@ -73,6 +75,7 @@ export async function initializeDatabase(fallback: PersistedState) {
   await addColumn(database, "captures", "user_note TEXT");
   await addColumn(database, "captures", "mime_type TEXT");
   await addColumn(database, "captures", "reminder_notification_id TEXT");
+  await addColumn(database, "captures", "reminder_at TEXT");
 
   const initialized = await database.getFirstAsync<{ value: string }>(
     "SELECT value FROM settings WHERE key = 'initialized'",
@@ -116,6 +119,7 @@ export async function initializeDatabase(fallback: PersistedState) {
         userNote: row.user_note || undefined,
         mimeType: row.mime_type || undefined,
         reminderNotificationId: row.reminder_notification_id || undefined,
+        reminderAt: row.reminder_at || undefined,
         createdAt: row.created_at,
         favourite: Boolean(row.favourite),
         archived: Boolean(row.archived),
@@ -131,8 +135,8 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
     for (const [position, capture] of state.captures.entries()) {
       await database.runAsync(
         `INSERT INTO captures
-          (id, kind, title, body, source, category, metadata_title, metadata_description, metadata_image, metadata_site_name, local_file_uri, captured_at, user_note, mime_type, reminder_notification_id, created_at, favourite, archived, position)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, kind, title, body, source, category, metadata_title, metadata_description, metadata_image, metadata_site_name, local_file_uri, captured_at, user_note, mime_type, reminder_notification_id, reminder_at, created_at, favourite, archived, position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         capture.id,
         capture.kind,
         capture.title,
@@ -148,6 +152,7 @@ export async function saveState(database: SQLiteDatabase, state: PersistedState)
         capture.userNote ?? null,
         capture.mimeType ?? null,
         capture.reminderNotificationId ?? null,
+        capture.reminderAt ?? null,
         capture.createdAt,
         capture.favourite ? 1 : 0,
         capture.archived ? 1 : 0,

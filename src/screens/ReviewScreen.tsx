@@ -9,19 +9,20 @@ import { useToast } from "../components/ToastProvider";
 import { useAppStore } from "../store/AppStore";
 import { getTheme, radius, shadow, spacing, type } from "../theme";
 import type { RootStackParamList } from "../types";
-import { getImageUri } from "../utils/capture";
+import { formatCaptureTime, getImageUri } from "../utils/capture";
 import { getReminderDate, type ReminderChoice } from "../utils/reminders";
 
 const kindIcons = { link: Link2, image: ImageIcon, note: StickyNote, document: FileText, task: CheckCircle2, voice: Mic };
 
 export function ReviewScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { captures, dark, reviewIndex, advanceReview, archiveCapture, setCaptureReminder } = useAppStore();
+  const { captures, dark, now, reviewIndex, advanceReview, archiveCapture, clearCaptureReminder, setCaptureReminder } = useAppStore();
   const theme = getTheme(dark);
   const toast = useToast();
   const [reminderOpen, setReminderOpen] = useState(false);
-  const queue = captures.filter((item) => !item.archived);
-  const item = queue[reviewIndex];
+  const dueReminder = captures.find((item) => !item.archived && item.reminderNotificationId && item.reminderAt && new Date(item.reminderAt).getTime() <= now);
+  const queue = captures.filter((item) => !item.archived && !item.reminderAt);
+  const item = dueReminder || queue[reviewIndex];
 
   const scheduleReminder = async (choice: ReminderChoice) => {
     if (!item) return;
@@ -30,13 +31,13 @@ export function ReviewScreen() {
       if (permissions.status !== "granted") permissions = await Notifications.requestPermissionsAsync();
       if (permissions.status !== "granted") { Alert.alert("Notifications are off", "Allow notifications in Settings to create reminders."); return; }
       if (Platform.OS === "android") await Notifications.setNotificationChannelAsync("reminders", { name: "Capture reminders", importance: Notifications.AndroidImportance.DEFAULT });
+      const reminderDate = getReminderDate(choice);
       const reminderNotificationId = await Notifications.scheduleNotificationAsync({
         content: { title: "Tuck reminder", body: "You have a capture to review.", data: { captureId: item.id } },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: getReminderDate(choice), ...(Platform.OS === "android" ? { channelId: "reminders" } : {}) },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate, ...(Platform.OS === "android" ? { channelId: "reminders" } : {}) },
       });
-      setCaptureReminder(item.id, reminderNotificationId);
+      setCaptureReminder(item.id, reminderNotificationId, reminderDate.toISOString());
       setReminderOpen(false);
-      advanceReview();
       toast(choice === "tomorrow" ? "Reminder set for tomorrow" : "Reminder set for next week");
     } catch (error) { console.error("Failed to schedule capture reminder", error); Alert.alert("Couldn’t set reminder", "Please try again."); }
   };
@@ -59,8 +60,8 @@ export function ReviewScreen() {
     <Screen>
       <ScreenTitle title="Review" subtitle="Decide what stays" />
       <View style={styles.progress}>
-        <Text style={[styles.meta, { color: theme.textMuted }]}>{reviewIndex + 1} of {queue.length}</Text>
-        <View style={[styles.track, { backgroundColor: theme.border }]}><View style={[styles.fill, { width: `${((reviewIndex + 1) / queue.length) * 100}%`, backgroundColor: theme.accent }]} /></View>
+        <Text style={[styles.meta, { color: theme.textMuted }]}>{dueReminder ? "Reminder due" : `${reviewIndex + 1} of ${queue.length}`}</Text>
+        <View style={[styles.track, { backgroundColor: theme.border }]}><View style={[styles.fill, { width: dueReminder ? "100%" : `${((reviewIndex + 1) / queue.length) * 100}%`, backgroundColor: theme.accent }]} /></View>
       </View>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -68,10 +69,10 @@ export function ReviewScreen() {
           <View style={[styles.kindBadge, { backgroundColor: theme.accentSoft }]}><ItemIcon size={14} color={theme.accentText} /><Text style={[styles.kicker, { color: theme.accentText }]}>{item.kind}</Text></View>
           <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
           {item.body ? <Text numberOfLines={3} style={[styles.description, { color: theme.textSecondary }]}>{item.body}</Text> : null}
-          <Text style={[styles.meta, { color: theme.textMuted }]}>{item.createdAt}</Text>
+          <Text style={[styles.meta, { color: theme.textMuted }]}>{formatCaptureTime(item.capturedAt, item.createdAt, new Date(now))}</Text>
         </View>
         <View style={styles.actions}>
-          <Action icon={CheckCircle2} label="Keep" active onPress={advanceReview} />
+          <Action icon={CheckCircle2} label="Keep" active onPress={() => { if (item.reminderAt) clearCaptureReminder(item.id); advanceReview(); }} />
           <Action icon={Archive} label="Archive" onPress={() => { archiveCapture(item.id); toast("Archived"); }} />
           <Action icon={Clock3} label="Remind" outlined onPress={() => setReminderOpen(true)} />
           <Action icon={ChevronRight} label="Open" onPress={() => navigation.navigate("CaptureDetail", { id: item.id, returnTo: "Review" })} />

@@ -6,3 +6,17 @@ export function getReminderDate(choice: ReminderChoice, now = new Date()) {
   date.setHours(9, 0, 0, 0);
   return date;
 }
+
+export function formatReminderLabel(reminderAt?: string, now = new Date()) {
+  if (!reminderAt) return undefined;
+  const reminder = new Date(reminderAt);
+  if (Number.isNaN(reminder.getTime())) return undefined;
+  if (reminder <= now) return "Reminder due";
+  const time = reminder.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = new Date(reminder.getFullYear(), reminder.getMonth(), reminder.getDate());
+  const dayDifference = Math.round((day.getTime() - today.getTime()) / 86_400_000);
+  if (dayDifference === 0) return `Reminded: Today, ${time}`;
+  if (dayDifference === 1) return `Reminded: Tomorrow, ${time}`;
+  return `Reminded: ${reminder.toLocaleDateString([], { month: "short", day: "numeric" })}, ${time}`;
+}
